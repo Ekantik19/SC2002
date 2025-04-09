@@ -1,76 +1,120 @@
 package com.bto.model;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Singleton class responsible for managing data persistence.
+ * DataManager serves as a facade for all the specialized data managers.
+ * It coordinates data operations across different entity types and provides a unified interface.
  */
 public class DataManager {
-    private static DataManager instance;
-    
     private List<User> users;
     private List<Project> projects;
     private List<Application> applications;
     private List<Enquiry> enquiries;
+    private List<Report> reports;
     
-    // File paths
-    private static final String USERS_FILE = "users.txt";
-    private static final String PROJECTS_FILE = "projects.txt";
-    private static final String APPLICATIONS_FILE = "applications.txt";
-    private static final String ENQUIRIES_FILE = "enquiries.txt";
-
-    private String dataDirectory = "main/java/com/resources/";
+    private String dataDirectory = "src/main/java/com/resources/";
+    //"C:\Users\luisa\OneDrive\Documents\GitHub\SC2002\BTO_App\btoapp\src\main\java\com\resources"
     
     /**
-     * Private constructor for singleton pattern.
+     * Constructor for DataManager.
      */
-    private DataManager() {
+    public DataManager() {
         users = new ArrayList<>();
         projects = new ArrayList<>();
         applications = new ArrayList<>();
         enquiries = new ArrayList<>();
-    }
-
-    public static DataManager createDataManager() {
-        return new DataManager();
+        reports = new ArrayList<>();
     }
     
-    // /**
-    //  * Get the singleton instance.
-    //  * 
-    //  * @return The DataManager instance
-    //  */
-    // public static DataManager getInstance() {
-    //     if (instance == null) {
-    //         instance = new DataManager();
-    //     }
-    //     return instance;
-    // }
-
+    /**
+     * Initialize the data manager and load all data.
+     */
+    public void initialize() {
+        loadData();
+    }
+    
     /**
      * Load all data from files.
      */
     public void loadData() {
-        loadUsers();
-        loadProjects();
-        loadApplications();
-        loadEnquiries();
+        System.out.println("Loading data from: " + dataDirectory);
+        
+        // Load users (applicants, officers, managers)
+        List<Applicant> applicants = ApplicantDataManager.loadApplicants();
+        List<HDBOfficer> officers = OfficerDataManager.loadOfficers();
+        List<HDBManager> managers = ManagerDataManager.loadManagers();
+        
+        // Add all users to the users list
+        users.addAll(applicants);
+        users.addAll(officers);
+        users.addAll(managers);
+        
+        // Set data manager reference in each user
+        for (User user : users) {
+            user.setDataManager(this);
+        }
+        
+        // Load projects
+        projects = ProjectDataManager.loadProjects(managers, officers);
+        
+        // Load applications
+        applications = ApplicationDataManager.loadApplications(applicants, projects);
+        
+        // Load enquiries
+        enquiries = EnquiryDataManager.loadEnquiries(users, projects);
+        
+        System.out.println("Data loading complete.");
     }
     
     /**
      * Save all data to files.
      */
     public void saveData() {
-        saveUsers();
-        saveProjects();
-        saveApplications();
-        saveEnquiries();
+        // Save all users
+        List<Applicant> applicants = new ArrayList<>();
+        List<HDBOfficer> officers = new ArrayList<>();
+        List<HDBManager> managers = new ArrayList<>();
+        
+        // Separate users by type
+        for (User user : users) {
+            if (user instanceof Applicant) {
+                applicants.add((Applicant) user);
+            } else if (user instanceof HDBOfficer) {
+                officers.add((HDBOfficer) user);
+            } else if (user instanceof HDBManager) {
+                managers.add((HDBManager) user);
+            }
+        }
+        
+        // Use individual data managers to save each type
+        for (Applicant applicant : applicants) {
+            ApplicantDataManager.updateApplicant(applicant);
+        }
+        
+        for (HDBOfficer officer : officers) {
+            OfficerDataManager.updateOfficer(officer);
+        }
+        
+        for (HDBManager manager : managers) {
+            ManagerDataManager.updateManager(manager);
+        }
+        
+        // Save projects
+        for (Project project : projects) {
+            ProjectDataManager.updateProject(project);
+        }
+        
+        // Save applications
+        for (Application application : applications) {
+            ApplicationDataManager.updateApplication(application);
+        }
+        
+        // Save enquiries (would need specialized save methods)
+        // This is simplified as a demonstration
+        
+        System.out.println("Data saving complete.");
     }
     
     /**
@@ -78,175 +122,26 @@ public class DataManager {
      * 
      * @param userID The user ID to authenticate
      * @param password The password to verify
-     * @return The authenticated User, or null if authentication fails
+     * @return User object if login successful, null otherwise
      */
     public User authenticate(String userID, String password) {
         for (User user : users) {
             if (user.getUserID().equals(userID) && user.authenticate(password)) {
-                 // Set the DataManager for the user before returning it
-                user.setDataManager(this);
                 return user;
             }
         }
         return null;
-    }
-    
-    /**
-     * Load users from file.
-     */
-    private void loadUsers() {
-        try (BufferedReader reader = new BufferedReader(new FileReader(dataDirectory + USERS_FILE))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split("\t");
-                if (parts.length >= 5) {
-                    String userID = parts[0];
-                    String password = parts[1];
-                    String role = parts[2];
-                    int age = Integer.parseInt(parts[3]);
-                    String maritalStatus = parts[4];
-                    
-                    User user;
-                    if ("Applicant".equals(role)) {
-                        user = new Applicant(userID, password, age, maritalStatus);
-                    } else if ("HDBOfficer".equals(role)) {
-                        user = new HDBOfficer(userID, password, age, maritalStatus);
-                    } else if ("HDBManager".equals(role)) {
-                        user = new HDBManager(userID, password, age, maritalStatus);
-                    } else {
-                        continue; // Skip invalid roles
-                    }
-                    
-                    user.setDataManager(this);
-                
-                    users.add(user);
-                }
-            }
-        } catch (IOException e) {
-            System.err.println("Error loading users: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Save users to file.
-     */
-    private void saveUsers() {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(dataDirectory + USERS_FILE))) {
-            for (User user : users) {
-                String role;
-                if (user instanceof Applicant) {
-                    role = "Applicant";
-                } else if (user instanceof HDBManager) {
-                    role = "HDBManager";
-                } else if (user instanceof HDBOfficer) {
-                    role = "HDBOfficer";
-                } else {
-                    continue; // Skip invalid types
-                }
-                
-                writer.write(user.getUserID() + "\t" + 
-                            "password" + "\t" + // Don't save actual password for demo
-                            role + "\t" +
-                            user.getAge() + "\t" +
-                            user.getMaritalStatus());
-                writer.newLine();
-            }
-        } catch (IOException e) {
-            System.err.println("Error saving users: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Load projects from file.
-     */
-    private void loadProjects() {
-        // Implementation similar to loadUsers
-    }
-    
-    /**
-     * Save projects to file.
-     */
-    private void saveProjects() {
-        // Implementation similar to saveUsers
-    }
-    
-    /**
-     * Load applications from file.
-     */
-    private void loadApplications() {
-        // Implementation similar to loadUsers
-    }
-    
-    /**
-     * Save applications to file.
-     */
-    private void saveApplications() {
-        // Implementation similar to saveUsers
-    }
-    
-    /**
-     * Load enquiries from file.
-     */
-    private void loadEnquiries() {
-        try (BufferedReader reader = new BufferedReader(new FileReader(ENQUIRIES_FILE))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split("\t");
-                if (parts.length >= 5) {
-                    String enquiryId = parts[0];
-                    String userID = parts[1];
-                    int projectId = Integer.parseInt(parts[2]);
-                    String enquiryText = parts[3];
-                    String response = parts.length > 4 ? parts[4] : "";
-                    
-                    // Find the user and project
-                    User user = getUserByNRIC(userID);
-                    Project project = getProjectById(projectId);
-                    
-                    if (user != null && project != null) {
-                        Enquiry enquiry = new Enquiry(user, project, enquiryText);
-                        enquiry.setEnquiryId(enquiryId);
-                        if (!response.isEmpty()) {
-                            enquiry.addResponse(response);
-                        }
-                        enquiries.add(enquiry);
-                    }
-                }
-            }
-        } catch (IOException e) {
-            System.err.println("Error loading enquiries: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Save enquiries to file.
-     */
-    private void saveEnquiries() {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(ENQUIRIES_FILE))) {
-            for (Enquiry enquiry : enquiries) {
-                writer.write(enquiry.getEnquiryId() + "\t" + 
-                            enquiry.getUser().getUserID() + "\t" +
-                            enquiry.getProject().getProjectID() + "\t" +
-                            enquiry.getEnquiryText() + "\t" +
-                            (enquiry.getResponse() != null ? enquiry.getResponse() : ""));
-                writer.newLine();
-            }
-        } catch (IOException e) {
-            System.err.println("Error saving enquiries: " + e.getMessage());
-        }
     }
     
     /**
      * Get a user by NRIC.
      * 
-     * @param userID The NRIC/UserID of the user to find
-     * @return The user with the specified NRIC, or null if not found
+     * @param userID The NRIC to search for
+     * @return The user, or null if not found
      */
     public User getUserByNRIC(String userID) {
         for (User user : users) {
             if (user.getUserID().equals(userID)) {
-                // Set the DataManager for the user before returning it
-                user.setDataManager(this);
                 return user;
             }
         }
@@ -254,14 +149,14 @@ public class DataManager {
     }
     
     /**
-     * Get a project by ID.
+     * Get a project by name.
      * 
-     * @param projectId The ID of the project to find
-     * @return The project with the specified ID, or null if not found
+     * @param projectName The name of the project to retrieve
+     * @return The project with the specified name, or null if not found
      */
-    public Project getProjectById(int projectId) {
+    public Project getProjectByName(String projectName) {
         for (Project project : projects) {
-            if (project.getProjectID() == projectId) {
+            if (project.getProjectName().equals(projectName)) {
                 return project;
             }
         }
@@ -269,58 +164,45 @@ public class DataManager {
     }
     
     /**
-     * Get all projects that an applicant has applied for.
+     * Add a new user.
      * 
-     * @param applicant The applicant
-     * @return A list of projects the applicant has applied for
+     * @param user The user to add
      */
-    public List<Project> getAppliedProjects(Applicant applicant) {
-        List<Project> appliedProjects = new ArrayList<>();
+    public void addUser(User user) {
+        users.add(user);
         
-        for (Application application : applications) {
-            if (application.getApplicant().getUserID().equals(applicant.getUserID())) {
-                appliedProjects.add(application.getProject());
-            }
+        if (user instanceof Applicant) {
+            ApplicantDataManager.addApplicant((Applicant) user);
+        } else if (user instanceof HDBOfficer) {
+            OfficerDataManager.addOfficer((HDBOfficer) user);
+        } else if (user instanceof HDBManager) {
+            ManagerDataManager.addManager((HDBManager) user);
         }
-        
-        return appliedProjects;
-    }
-    
-    // Other methods for data access
-    public List<User> getAllUsers() {
-        return users;
-    }
-    
-    public List<Project> getAllProjects() {
-        return projects;
-    }
-    
-    public List<Application> getAllApplications() {
-        return applications;
     }
     
     /**
-     * Get all enquiries.
+     * Add a new project.
      * 
-     * @return A list of all enquiries
+     * @param project The project to add
      */
-    public List<Enquiry> getAllEnquiries() {
-        return enquiries;
-    }
-    
-    public void addUser(User user) {
-        users.add(user);
-        saveUsers();
-    }
-    
     public void addProject(Project project) {
         projects.add(project);
-        saveProjects();
+        ProjectDataManager.addProject(project);
     }
     
+    /**
+     * Add a new application.
+     * 
+     * @param application The application to add
+     */
     public void addApplication(Application application) {
         applications.add(application);
-        saveApplications();
+        ApplicationDataManager.addApplication(application);
+        
+        // Link application to applicant and project
+        Applicant applicant = (Applicant) application.getApplicant();
+        applicant.setCurrentApplication(application);
+        application.getProject().addApplication(application);
     }
     
     /**
@@ -329,36 +211,28 @@ public class DataManager {
      * @param enquiry The enquiry to save
      */
     public void saveEnquiry(Enquiry enquiry) {
-        // Check if this is an update or a new enquiry
-        boolean isUpdate = false;
-        for (int i = 0; i < enquiries.size(); i++) {
-            if (enquiries.get(i).getEnquiryId().equals(enquiry.getEnquiryId())) {
-                enquiries.set(i, enquiry);
-                isUpdate = true;
-                break;
-            }
-        }
+        enquiries.add(enquiry);
+        EnquiryDataManager.addEnquiry(enquiry);
         
-        if (!isUpdate) {
-            enquiries.add(enquiry);
+        // Link enquiry to applicant if applicable
+        if (enquiry.getUser() instanceof Applicant) {
+            ((Applicant) enquiry.getUser()).addEnquiry(enquiry);
         }
-        
-        saveEnquiries();
     }
     
     /**
-     * Update an existing enquiry.
+     * Update an enquiry.
      * 
      * @param enquiry The enquiry to update
      */
     public void updateEnquiry(Enquiry enquiry) {
         for (int i = 0; i < enquiries.size(); i++) {
-            if (enquiries.get(i).getEnquiryId().equals(enquiry.getEnquiryId())) {
+            if (enquiries.get(i).equals(enquiry)) {
                 enquiries.set(i, enquiry);
                 break;
             }
         }
-        saveEnquiries();
+        EnquiryDataManager.updateEnquiry(enquiry);
     }
     
     /**
@@ -367,33 +241,79 @@ public class DataManager {
      * @param enquiry The enquiry to delete
      */
     public void deleteEnquiry(Enquiry enquiry) {
-        enquiries.removeIf(e -> e.getEnquiryId().equals(enquiry.getEnquiryId()));
-        saveEnquiries();
+        enquiries.remove(enquiry);
+        EnquiryDataManager.deleteEnquiry(enquiry);
+        
+        // Remove from applicant's list if applicable
+        if (enquiry.getUser() instanceof Applicant) {
+            ((Applicant) enquiry.getUser()).getEnquiries().remove(enquiry);
+        }
     }
-//////////////
-
-    private List<Report> reports = new ArrayList<>();
-
+    
     /**
-     * Save a report.
+     * Save a report to the in-memory list.
+     * Reports are not persisted to disk in this implementation.
      * 
      * @param report The report to save
      */
     public void saveReport(Report report) {
         reports.add(report);
-        // Implement file persistence if needed
     }
-
+    
+    /**
+     * Get all users.
+     * 
+     * @return The list of all users
+     */
+    public List<User> getAllUsers() {
+        return users;
+    }
+    
+    /**
+     * Get all projects.
+     * 
+     * @return The list of all projects
+     */
+    public List<Project> getAllProjects() {
+        return projects;
+    }
+    
+    /**
+     * Get all applications.
+     * 
+     * @return The list of all applications
+     */
+    public List<Application> getAllApplications() {
+        return applications;
+    }
+    
+    /**
+     * Get all enquiries.
+     * 
+     * @return The list of all enquiries
+     */
+    public List<Enquiry> getAllEnquiries() {
+        return enquiries;
+    }
+    
     /**
      * Get all reports.
      * 
-     * @return A list of all reports
+     * @return The list of all reports
      */
     public List<Report> getAllReports() {
         return reports;
     }
-
+    
+    /**
+     * Set the data directory.
+     * 
+     * @param directory The directory path
+     */
     public void setDataDirectory(String directory) {
         this.dataDirectory = directory;
+        if (!this.dataDirectory.endsWith("/")) {
+            this.dataDirectory += "/";
+        }
     }
 }

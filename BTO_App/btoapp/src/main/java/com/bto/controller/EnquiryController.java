@@ -27,9 +27,6 @@ public class EnquiryController {
     public EnquiryController(DataManager dataManager) {
         this.dataManager = dataManager;
     }
-    // public EnquiryController() {
-    //     this.dataManager = DataManager.getInstance();
-    // }
     
     /**
      * Create a new enquiry.
@@ -43,11 +40,30 @@ public class EnquiryController {
         try {
             Enquiry enquiry = new Enquiry(user, project, enquiryText);
             dataManager.saveEnquiry(enquiry);
+            
+            // If user is an applicant, add to their enquiries list
+            if (user instanceof Applicant) {
+                ((Applicant) user).addEnquiry(enquiry);
+            }
+            
             return true;
         } catch (Exception e) {
             System.err.println("Error creating enquiry: " + e.getMessage());
             return false;
         }
+    }
+    
+    /**
+     * Submit an enquiry - alias for createEnquiry to maintain compatibility with tests.
+     * 
+     * @param user The user submitting the enquiry
+     * @param project The project the enquiry is about
+     * @param enquiryText The text of the enquiry
+     * @return 1 if successful (to represent success), -1 if failed
+     */
+    public int submitEnquiry(User user, Project project, String enquiryText) {
+        boolean success = createEnquiry(user, project, enquiryText);
+        return success ? 1 : -1;  // Return 1 for success, -1 for failure
     }
     
     /**
@@ -57,116 +73,79 @@ public class EnquiryController {
      * @return A list of enquiries created by the user
      */
     public List<Enquiry> getUserEnquiries(User user) {
-        try {
-            List<Enquiry> allEnquiries = dataManager.getAllEnquiries();
-            return allEnquiries.stream()
-                    .filter(e -> e.getUser().getUserID().equals(user.getUserID()))
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            System.err.println("Error retrieving user enquiries: " + e.getMessage());
-            return new ArrayList<>();
-        }
+        List<Enquiry> allEnquiries = dataManager.getAllEnquiries();
+        
+        return allEnquiries.stream()
+                .filter(e -> e.getUser().getUserID().equals(user.getUserID()))
+                .collect(Collectors.toList());
     }
     
     /**
-     * Update an existing enquiry with new text.
+     * Edit an enquiry for a specific applicant.
+     * Only the applicant who created the enquiry can edit it, and only if it hasn't been responded to.
      * 
-     * @param enquiry The enquiry to update
+     * @param applicant The applicant editing the enquiry
+     * @param projectName The name of the project the enquiry is about
+     * @param oldText The current text of the enquiry (to identify it)
      * @param newText The new text for the enquiry
-     * @return True if the enquiry was updated successfully, false otherwise
+     * @return True if the enquiry was edited successfully, false otherwise
      */
-    public boolean updateEnquiry(Enquiry enquiry, String newText) {
-        try {
-            // Only allow updating if the enquiry has no response yet
-            if (enquiry.getResponse() != null && !enquiry.getResponse().isEmpty()) {
-                System.out.println("Cannot edit an enquiry that has already been responded to.");
-                return false;
-            }
-            
-            enquiry.updateEnquiry(newText);
-            dataManager.updateEnquiry(enquiry);
-            return true;
-        } catch (Exception e) {
-            System.err.println("Error updating enquiry: " + e.getMessage());
+    public boolean editEnquiry(Applicant applicant, String projectName, String oldText, String newText) {
+        // Get all enquiries for this applicant
+        List<Enquiry> userEnquiries = getUserEnquiries(applicant);
+        
+        // Find the specific enquiry by project and text
+        Enquiry enquiryToEdit = userEnquiries.stream()
+            .filter(e -> e.getProject().getProjectName().equals(projectName) && e.getEnquiryText().equals(oldText))
+            .findFirst()
+            .orElse(null);
+        
+        if (enquiryToEdit == null) {
             return false;
         }
+        
+        // Only allow editing if the enquiry has no response yet
+        if (enquiryToEdit.getResponse() != null && !enquiryToEdit.getResponse().isEmpty()) {
+            return false;
+        }
+        
+        // Update the enquiry
+        enquiryToEdit.updateEnquiry(newText);
+        dataManager.updateEnquiry(enquiryToEdit);
+        
+        return true;
     }
     
     /**
-     * Delete an existing enquiry.
+     * Delete an enquiry for a specific applicant.
+     * Only the applicant who created the enquiry can delete it.
      * 
-     * @param enquiry The enquiry to delete
+     * @param applicant The applicant deleting the enquiry
+     * @param projectName The name of the project the enquiry is about
+     * @param enquiryText The text of the enquiry (to identify it)
      * @return True if the enquiry was deleted successfully, false otherwise
      */
-    public boolean deleteEnquiry(Enquiry enquiry) {
-        try {
-            dataManager.deleteEnquiry(enquiry);
-            return true;
-        } catch (Exception e) {
-            System.err.println("Error deleting enquiry: " + e.getMessage());
+    public boolean deleteEnquiry(Applicant applicant, String projectName, String enquiryText) {
+        // Get all enquiries for this applicant
+        List<Enquiry> userEnquiries = getUserEnquiries(applicant);
+        
+        // Find the specific enquiry by project and text
+        Enquiry enquiryToDelete = userEnquiries.stream()
+            .filter(e -> e.getProject().getProjectName().equals(projectName) && e.getEnquiryText().equals(enquiryText))
+            .findFirst()
+            .orElse(null);
+        
+        if (enquiryToDelete == null) {
             return false;
         }
-    }
-    
-    /**
-     * Get a list of projects that the user can view and enquire about.
-     * 
-     * @param user The current user
-     * @return A list of available projects
-     */
-    public List<Project> getAvailableProjects(User user) {
-        List<Project> allProjects = dataManager.getAllProjects();
         
-        // For HDB Managers, show all projects
-        if (user instanceof HDBManager) {
-            return allProjects;
-        }
+        // Delete the enquiry
+        dataManager.deleteEnquiry(enquiryToDelete);
         
-        List<Project> availableProjects = new ArrayList<>();
+        // Remove from applicant's list of enquiries if present
+        applicant.getEnquiries().remove(enquiryToDelete);
         
-        for (Project project : allProjects) {
-            // For HDB Officers, show projects they're handling
-            if (user instanceof HDBOfficer) {
-                HDBOfficer officer = (HDBOfficer) user;
-                if (officer.getAssignedProject() != null && 
-                    officer.getAssignedProject().getProjectID() == project.getProjectID()) {
-                    availableProjects.add(project);
-                }
-            } 
-            // For Applicants, show visible projects appropriate for their status
-            else if (user instanceof Applicant) {
-                Applicant applicant = (Applicant) user;
-                
-                // Check if project is visible
-                if (project.isVisible()) {
-                    // Check if project is available for the applicant's marital status
-                    boolean isEligible = false;
-                    
-                    if ("Married".equalsIgnoreCase(applicant.getMaritalStatus()) && applicant.getAge() >= 21) {
-                        // Married applicants 21+ can apply for any flat type
-                        isEligible = true;
-                    } else if (!"Married".equalsIgnoreCase(applicant.getMaritalStatus()) && applicant.getAge() >= 35) {
-                        // Single applicants 35+ can only apply for 2-Room
-                        // Check if project has 2-Room flats
-                        isEligible = project.hasFlatType("2-Room");
-                    }
-                    
-                    if (isEligible) {
-                        availableProjects.add(project);
-                    }
-                }
-                
-                // Also add projects the applicant has already applied for, even if not visible
-                List<Project> appliedProjects = dataManager.getAppliedProjects(applicant);
-                for (Project appliedProject : appliedProjects) {
-                    if (!availableProjects.contains(appliedProject)) {
-                        availableProjects.add(appliedProject);
-                    }
-                }
-            }
-        }
-        
-        return availableProjects;
+        return true;
     }
     
     /**
@@ -176,44 +155,34 @@ public class EnquiryController {
      * @return A list of enquiries for the project
      */
     public List<Enquiry> getProjectEnquiries(Project project) {
-        try {
-            List<Enquiry> allEnquiries = dataManager.getAllEnquiries();
-            return allEnquiries.stream()
-                    .filter(e -> e.getProject().getProjectID() == project.getProjectID())
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            System.err.println("Error retrieving project enquiries: " + e.getMessage());
-            return new ArrayList<>();
-        }
+        List<Enquiry> allEnquiries = dataManager.getAllEnquiries();
+        
+        return allEnquiries.stream()
+                .filter(e -> e.getProject().getProjectName().equals(project.getProjectName()))
+                .collect(Collectors.toList());
     }
     
     /**
-     * Get projects that the staff member is handling.
+     * Get all enquiries for a specific project by name, for an HDB Officer.
      * 
-     * @param user The staff member (HDB Officer or Manager)
-     * @return A list of projects the staff member is handling
+     * @param officer The HDB Officer requesting enquiries
+     * @param projectName The name of the project to get enquiries for
+     * @return A list of enquiries for the project, or empty list if officer isn't assigned
      */
-    public List<Project> getStaffProjects(User user) {
-        List<Project> staffProjects = new ArrayList<>();
-        
-        if (user instanceof HDBOfficer) {
-            HDBOfficer officer = (HDBOfficer) user;
-            if (officer.getAssignedProject() != null) {
-                staffProjects.add(officer.getAssignedProject());
-            }
-        } else if (user instanceof HDBManager) {
-            HDBManager manager = (HDBManager) user;
-            // For managers, get all projects they created
-            List<Project> allProjects = dataManager.getAllProjects();
-            for (Project project : allProjects) {
-                if (project.getManagerInCharge() != null && 
-                    project.getManagerInCharge().getUserID().equals(manager.getUserID())) {
-                    staffProjects.add(project);
-                }
-            }
+    public List<Enquiry> getProjectEnquiries(HDBOfficer officer, String projectName) {
+        // Verify the officer is assigned to this project
+        if (officer.getAssignedProject() == null || 
+            !officer.getAssignedProject().getProjectName().equals(projectName) ||
+            !HDBOfficer.STATUS_APPROVED.equals(officer.getRegistrationStatus())) {
+            return new ArrayList<>();
         }
         
-        return staffProjects;
+        // Return enquiries for this project
+        List<Enquiry> allEnquiries = dataManager.getAllEnquiries();
+        
+        return allEnquiries.stream()
+                .filter(e -> e.getProject().getProjectName().equals(projectName))
+                .collect(Collectors.toList());
     }
     
     /**
@@ -223,44 +192,102 @@ public class EnquiryController {
      * @return A list of pending enquiries
      */
     public List<Enquiry> getPendingEnquiries(List<Project> projects) {
-        List<Enquiry> pendingEnquiries = new ArrayList<>();
+        List<Enquiry> allEnquiries = dataManager.getAllEnquiries();
         
-        for (Project project : projects) {
-            List<Enquiry> projectEnquiries = getProjectEnquiries(project);
-            for (Enquiry enquiry : projectEnquiries) {
-                if (enquiry.getResponse() == null || enquiry.getResponse().isEmpty()) {
-                    pendingEnquiries.add(enquiry);
-                }
-            }
-        }
+        // Get all project names
+        List<String> projectNames = projects.stream()
+                .map(Project::getProjectName)
+                .collect(Collectors.toList());
         
-        return pendingEnquiries;
+        // Filter enquiries for these projects that have no response
+        return allEnquiries.stream()
+                .filter(e -> projectNames.contains(e.getProject().getProjectName()))
+                .filter(e -> e.getResponse() == null || e.getResponse().isEmpty())
+                .collect(Collectors.toList());
     }
     
     /**
-     * Add a response to an enquiry.
+     * Add a response to an enquiry. 
+     * Only HDB Officers and Managers can respond.
      * 
-     * @param enquiry The enquiry to respond to
+     * @param user The user responding to the enquiry (must be HDBOfficer or HDBManager)
+     * @param applicantID The ID of the applicant who submitted the enquiry
+     * @param projectName The name of the project the enquiry is about
      * @param response The response text
-     * @return True if the response was added successfully, false otherwise
+     * @return true if the response was added successfully, false otherwise
      */
-    public boolean respondToEnquiry(Enquiry enquiry, String response) {
-        try {
-            enquiry.addResponse(response);
-            dataManager.updateEnquiry(enquiry);
-            return true;
-        } catch (Exception e) {
-            System.err.println("Error responding to enquiry: " + e.getMessage());
+    public boolean respondToEnquiry(User user, String applicantID, String projectName, String response) {
+        // First validate the user type
+        if (!(user instanceof HDBOfficer) && !(user instanceof HDBManager)) {
+            return false; // Only HDB Officers and Managers can respond
+        }
+        
+        // Find the applicant
+        Applicant applicant = null;
+        for (User u : dataManager.getAllUsers()) {
+            if (u instanceof Applicant && u.getUserID().equals(applicantID)) {
+                applicant = (Applicant) u;
+                break;
+            }
+        }
+        
+        if (applicant == null) {
             return false;
         }
+        
+        // For HDB Officers, check project assignment
+        if (user instanceof HDBOfficer) {
+            HDBOfficer officer = (HDBOfficer) user;
+            // Officer must be assigned to the project and approved
+            if (officer.getAssignedProject() == null || 
+                !officer.getAssignedProject().getProjectName().equals(projectName) || 
+                !HDBOfficer.STATUS_APPROVED.equals(officer.getRegistrationStatus())) {
+                return false;
+            }
+        }
+        
+        // Retrieve the enquiry
+        Enquiry enquiryToRespond = getEnquiry(applicant, projectName);
+        
+        if (enquiryToRespond == null) {
+            return false;
+        }
+        
+        // Add the response
+        enquiryToRespond.addResponse(response);
+        dataManager.updateEnquiry(enquiryToRespond);
+        
+        return true;
     }
-
-        /**
-     * Get all enquiries in the system.
+    
+    /**
+     * Get an enquiry for a specific applicant and project.
      * 
-     * @return A list of all enquiries
+     * @param applicant The applicant who submitted the enquiry
+     * @param projectName The name of the project
+     * @return The enquiry if found, null otherwise
      */
-    public List<Enquiry> getAllEnquiries() {
+    private Enquiry getEnquiry(Applicant applicant, String projectName) {
+        List<Enquiry> userEnquiries = getUserEnquiries(applicant);
+        
+        return userEnquiries.stream()
+            .filter(e -> e.getProject().getProjectName().equals(projectName))
+            .findFirst()
+            .orElse(null);
+    }
+    
+    /**
+     * Get all enquiries in the system (for HDB Managers only).
+     * 
+     * @param user The user requesting all enquiries
+     * @return A list of all enquiries, or an empty list if the user is not a manager
+     */
+    public List<Enquiry> getAllEnquiries(User user) {
+        // Only HDB Managers can view all enquiries
+        if (!(user instanceof HDBManager)) {
+            return new ArrayList<>();
+        }
+        
         return dataManager.getAllEnquiries();
     }
 }

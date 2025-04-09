@@ -1,0 +1,8 @@
+-------------------------------------------------------------------------------
+Test set: com.bto.integration.ApplicantTests
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.099 s <<< FAILURE! - in com.bto.integration.ApplicantTests
+testSingleFlatBookingRestriction(com.bto.integration.ApplicantTests)  Time elapsed: 0.018 s  <<< FAILURE!
+java.lang.AssertionError: Applicant should be found
+	at com.bto.integration.ApplicantTests.testSingleFlatBookingRestriction(ApplicantTests.java:21)
+

@@ -1,276 +1,160 @@
 package com.bto.view;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-
 import com.bto.controller.ApplicationController;
+import com.bto.controller.EnquiryController;
 import com.bto.controller.ProjectController;
 import com.bto.model.Applicant;
-import com.bto.model.Project;
+import com.bto.view.abstracts.ARenderView;
 
 /**
- * View for the applicant interface.
+ * ApplicantView class is responsible for rendering the Applicant view,
+ * prompting the applicant to select various options in the BTO Management System.
+ * 
+ * This class extends the abstract base view class {@link ARenderView}.
  */
-public class ApplicantView {
-    private Scanner scanner;
+public class ApplicantView extends ARenderView {
     private Applicant applicant;
     private ApplicationController applicationController;
     private ProjectController projectController;
-    
+    private EnquiryController enquiryController;
+
     /**
-     * Constructor for ApplicantView.
+     * Constructs a new ApplicantView with the necessary controllers.
      * 
-     * @param applicant The applicant user
-     * @param applicationController The application controller
-     * @param projectController The project controller
+     * @param applicant The Applicant using the view
+     * @param applicationController Controller for application-related operations
+     * @param projectController Controller for project-related operations
+     * @param enquiryController Controller for enquiry-related operations
      */
-    public ApplicantView(Applicant applicant, ApplicationController applicationController, ProjectController projectController) {
-        this.scanner = new Scanner(System.in);
+    public ApplicantView(Applicant applicant,
+                         ApplicationController applicationController,
+                         ProjectController projectController,
+                         EnquiryController enquiryController) {
         this.applicant = applicant;
         this.applicationController = applicationController;
         this.projectController = projectController;
+        this.enquiryController = enquiryController;
     }
-    
+
     /**
-     * Display the applicant interface.
-     */
-    public void display() {
-        boolean running = true;
-        
-        while (running) {
-            System.out.println("\n==================================");
-            System.out.println("    Applicant Menu    ");
-            System.out.println("==================================");
-            System.out.println("1. View Available Projects");
-            System.out.println("2. Apply for a Project");
-            System.out.println("3. View Application Status");
-            System.out.println("4. Request Withdrawal");
-            System.out.println("5. Create Enquiry");
-            System.out.println("6. View My Enquiries");
-            System.out.println("7. Change Password");
-            System.out.println("8. Back to Main Menu");
-            
-            System.out.print("\nEnter choice: ");
-            int choice = getIntInput();
-            
-            switch (choice) {
-                case 1:
-                    viewAvailableProjects();
-                    break;
-                case 2:
-                    applyForProject();
-                    break;
-                case 3:
-                    viewApplicationStatus();
-                    break;
-                case 4:
-                    requestWithdrawal();
-                    break;
-                case 5:
-                    createEnquiry();
-                    break;
-                case 6:
-                    viewEnquiries();
-                    break;
-                case 7:
-                    changePassword();
-                    break;
-                case 8:
-                    running = false;
-                    break;
-                default:
-                    System.out.println("Invalid choice!");
-            }
-        }
-    }
-    
-    /**
-     * Display available projects for the applicant.
-     */
-    private void viewAvailableProjects() {
-        System.out.println("\n==================================");
-        System.out.println("    Available Projects    ");
-        System.out.println("==================================");
-        
-        // Get filters if any
-        Map<String, Object> filters = new HashMap<>();
-        
-        System.out.println("Do you want to apply filters? (Y/N)");
-        String applyFilters = scanner.nextLine();
-        
-        if (applyFilters.equalsIgnoreCase("Y")) {
-            System.out.println("Enter neighborhood (or leave blank for all):");
-            String neighborhood = scanner.nextLine();
-            if (!neighborhood.isEmpty()) {
-                filters.put("neighborhood", neighborhood);
-            }
-            
-            System.out.println("Enter flat type (2-Room/3-Room, or leave blank for all):");
-            String flatType = scanner.nextLine();
-            if (!flatType.isEmpty()) {
-                filters.put("flatType", flatType);
-            }
-        }
-        
-        List<Project> projects = projectController.getProjects(filters);
-        
-        if (projects == null || projects.isEmpty()) {
-            System.out.println("No projects available matching your criteria.");
-            return;
-        }
-        
-        System.out.println("\nID\tProject Name\tNeighborhood\tFlat Types\tStatus");
-        System.out.println("------------------------------------------------------------------");
-        
-        for (Project project : projects) {
-            StringBuilder flatTypes = new StringBuilder();
-            for (String type : project.getFlatTypes().keySet()) {
-                flatTypes.append(type).append(", ");
-            }
-            if (flatTypes.length() > 2) {
-                flatTypes.setLength(flatTypes.length() - 2); // Remove trailing comma and space
-            }
-            
-            System.out.printf("%d\t%s\t%s\t%s\t%s\n", 
-                             project.getProjectID(), 
-                             project.getProjectName(), 
-                             project.getNeighborhood(), 
-                             flatTypes.toString(), 
-                             project.isOpen() ? "Open" : "Closed");
-        }
-        
-        System.out.println("\nPress Enter to continue...");
-        scanner.nextLine();
-    }
-    
-    /**
-     * Apply for a project.
-     */
-    private void applyForProject() {
-        System.out.println("\n==================================");
-        System.out.println("    Apply for a Project    ");
-        System.out.println("==================================");
-        
-        // Check if already has an application
-        String status = applicationController.viewApplicationStatus();
-        if (!status.equals("No Application")) {
-            System.out.println("You already have an application. Current status: " + status);
-            System.out.println("\nPress Enter to continue...");
-            scanner.nextLine();
-            return;
-        }
-        
-        // View available projects
-        viewAvailableProjects();
-        
-        System.out.println("Enter the ID of the project you want to apply for:");
-        int projectID = getIntInput();
-        
-        boolean success = applicationController.applyForProject(projectID);
-        
-        if (success) {
-            System.out.println("Application submitted successfully!");
-        } else {
-            System.out.println("Failed to submit application. Please check your eligibility and the project availability.");
-        }
-        
-        System.out.println("\nPress Enter to continue...");
-        scanner.nextLine();
-    }
-    
-    /**
-     * View the status of the current application.
-     */
-    private void viewApplicationStatus() {
-        System.out.println("\n==================================");
-        System.out.println("    Application Status    ");
-        System.out.println("==================================");
-        
-        String status = applicationController.viewApplicationStatus();
-        System.out.println("Status: " + status);
-        
-        System.out.println("\nPress Enter to continue...");
-        scanner.nextLine();
-    }
-    
-    /**
-     * Request withdrawal from the current application.
-     */
-    private void requestWithdrawal() {
-        System.out.println("\n==================================");
-        System.out.println("    Request Withdrawal    ");
-        System.out.println("==================================");
-        
-        // Check if has an application
-        String status = applicationController.viewApplicationStatus();
-        if (status.equals("No Application")) {
-            System.out.println("You don't have an active application to withdraw from.");
-            System.out.println("\nPress Enter to continue...");
-            scanner.nextLine();
-            return;
-        }
-        
-        System.out.println("Are you sure you want to withdraw your application? (Y/N)");
-        String confirm = scanner.nextLine();
-        
-        if (confirm.equalsIgnoreCase("Y")) {
-            boolean success = applicationController.requestWithdrawal();
-            
-            if (success) {
-                System.out.println("Withdrawal request submitted successfully!");
-            } else {
-                System.out.println("Failed to submit withdrawal request.");
-            }
-        } else {
-            System.out.println("Withdrawal request cancelled.");
-        }
-        
-        System.out.println("\nPress Enter to continue...");
-        scanner.nextLine();
-    }
-    
-    /**
-     * Create an enquiry for a project.
-     */
-    private void createEnquiry() {
-        // Implementation for creating an enquiry
-        System.out.println("Create Enquiry functionality to be implemented.");
-        System.out.println("\nPress Enter to continue...");
-        scanner.nextLine();
-    }
-    
-    /**
-     * View enquiries made by the applicant.
-     */
-    private void viewEnquiries() {
-        // Implementation for viewing enquiries
-        System.out.println("View Enquiries functionality to be implemented.");
-        System.out.println("\nPress Enter to continue...");
-        scanner.nextLine();
-    }
-    
-    /**
-     * Change the applicant's password.
-     */
-    private void changePassword() {
-        // Implementation for changing password
-        System.out.println("Change Password functionality to be implemented.");
-        System.out.println("\nPress Enter to continue...");
-        scanner.nextLine();
-    }
-    
-    /**
-     * Get integer input from the user.
+     * Renders the application based on the user's selection.
      * 
-     * @return The integer input
+     * @param selection The selected menu option
+     *                  <ul>
+     *                      <li>0: Main menu</li>
+     *                      <li>1: View Projects</li>
+     *                      <li>2: Apply for Project</li>
+     *                      <li>3: View Application Status</li>
+     *                      <li>4: Request Withdrawal</li>
+     *                      <li>5: Book Flat</li>
+     *                      <li>6: Create Enquiry</li>
+     *                      <li>7: View Enquiries</li>
+     *                      <li>8: Change Password</li>
+     *                  </ul>
      */
-    private int getIntInput() {
-        try {
-            return Integer.parseInt(scanner.nextLine());
-        } catch (NumberFormatException e) {
-            return -1; // Invalid input
+    @Override
+    public void renderApp(int selection) {
+        clearCLI();
+        switch (selection) {
+            case 0:
+                renderChoice();
+                break;
+            case 1:
+                viewProjects();
+                break;
+            case 2:
+                applyForProject();
+                break;
+            case 3:
+                viewApplicationStatus();
+                break;
+            case 4:
+                requestWithdrawal();
+                break;
+            case 5:
+                bookFlat();
+                break;
+            case 6:
+                createEnquiry();
+                break;
+            case 7:
+                viewEnquiries();
+                break;
+            case 8:
+                changePassword();
+                break;
+            default:
+                System.out.println("Invalid option. Please try again.");
+                delay(2);
+                renderApp(0);
         }
+    }
+
+    /**
+     * Renders the main choice menu for the Applicant.
+     */
+    @Override
+    public void renderChoice() {
+        printBorder("Applicant Portal");
+        System.out.println("Welcome, Applicant " + applicant.getUserID());
+        System.out.println("Select an option:");
+        System.out.println("(1) View Projects");
+        System.out.println("(2) Apply for Project");
+        System.out.println("(3) View Application Status");
+        System.out.println("(4) Request Withdrawal");
+        System.out.println("(5) Book Flat");
+        System.out.println("(6) Create Enquiry");
+        System.out.println("(7) View Enquiries");
+        System.out.println("(8) Change Password");
+        System.out.println("(0) Exit");
+    }
+
+    // Placeholder methods for each menu option
+    private void viewProjects() {
+        System.out.println("Viewing Projects");
+        pressEnterToContinue();
+        renderApp(0);
+    }
+
+    private void applyForProject() {
+        System.out.println("Applying for Project");
+        pressEnterToContinue();
+        renderApp(0);
+    }
+
+    private void viewApplicationStatus() {
+        System.out.println("Viewing Application Status");
+        pressEnterToContinue();
+        renderApp(0);
+    }
+
+    private void requestWithdrawal() {
+        System.out.println("Requesting Withdrawal");
+        pressEnterToContinue();
+        renderApp(0);
+    }
+
+    private void bookFlat() {
+        System.out.println("Booking Flat");
+        pressEnterToContinue();
+        renderApp(0);
+    }
+
+    private void createEnquiry() {
+        System.out.println("Creating Enquiry");
+        pressEnterToContinue();
+        renderApp(0);
+    }
+
+    private void viewEnquiries() {
+        System.out.println("Viewing Enquiries");
+        pressEnterToContinue();
+        renderApp(0);
+    }
+
+    private void changePassword() {
+        System.out.println("Changing Password");
+        pressEnterToContinue();
+        renderApp(0);
     }
 }

@@ -31,12 +31,14 @@ public class App {
         scanner = new Scanner(System.in);
         
         // Create DataManager using factory method instead of singleton
-        dataManager = DataManager.createDataManager();
+        dataManager = new DataManager();
+
+        dataManager.setDataDirectory("src/main/java/com/resources/"); 
         
         // Initialize controllers with DataManager
         authController = new AuthController(dataManager);
         projectController = new ProjectController(dataManager, authController);
-        applicationController = new ApplicationController(dataManager, authController);
+        applicationController = new ApplicationController(dataManager, authController,projectController);
         enquiryController = new EnquiryController(dataManager);
         reportController = new ReportController(dataManager);
         

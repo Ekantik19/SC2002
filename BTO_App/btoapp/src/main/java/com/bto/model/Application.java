@@ -6,19 +6,19 @@ import java.util.Date;
  * Represents a BTO application submitted by an applicant.
  */
 public class Application {
-    private int applicationID;
     private Applicant applicant;
     private Project project;
     private String status; // PENDING, SUCCESSFUL, UNSUCCESSFUL, BOOKED
-    private String flatTypeBooked;
+    private String flatType; // The type of flat applied for
+    private String flatTypeBooked; // The type of flat booked (after approval)
     private Date applicationDate;
     private boolean withdrawalRequested;
     
     // Static constants for application status
-    public static final String STATUS_PENDING = "PENDING";
-    public static final String STATUS_SUCCESSFUL = "SUCCESSFUL";
-    public static final String STATUS_UNSUCCESSFUL = "UNSUCCESSFUL";
-    public static final String STATUS_BOOKED = "BOOKED";
+    public static final String STATUS_PENDING = "Pending";
+    public static final String STATUS_SUCCESSFUL = "Successful";
+    public static final String STATUS_UNSUCCESSFUL = "Unsuccessful";
+    public static final String STATUS_BOOKED = "Booked";
     
     /**
      * Constructor for Application.
@@ -32,9 +32,6 @@ public class Application {
         this.status = STATUS_PENDING;
         this.applicationDate = new Date();
         this.withdrawalRequested = false;
-        
-        // Generate application ID (in a real system this would be more sophisticated)
-        this.applicationID = (int) (Math.random() * 10000);
         
         // Add this application to the project
         project.addApplication(this);
@@ -79,12 +76,16 @@ public class Application {
     }
     
     // Getters and setters
-    public int getApplicationID() {
-        return applicationID;
-    }
-    
     public Applicant getApplicant() {
         return applicant;
+    }
+    /**
+     * Set the application date.
+     * 
+     * @param applicationDate The date to set
+     */
+    public void setApplicationDate(Date applicationDate) {
+        this.applicationDate = applicationDate;
     }
     
     public Project getProject() {
@@ -98,6 +99,10 @@ public class Application {
     public String getFlatTypeBooked() {
         return flatTypeBooked;
     }
+
+    public void setFlatTypeBooked(String flatType) {
+        this.flatTypeBooked = flatType;
+    }
     
     public Date getApplicationDate() {
         return applicationDate;
@@ -110,14 +115,43 @@ public class Application {
     public void setWithdrawalRequested(boolean withdrawalRequested) {
         this.withdrawalRequested = withdrawalRequested;
     }
-
-        /**
-     * Get the type of flat for this application.
-     * This is an alias for getFlatTypeBooked() for API consistency.
+    
+    /**
+     * Get the type of flat applied for in this application.
      * 
      * @return The flat type for this application
      */
     public String getFlatType() {
-        return getFlatTypeBooked();
+        return flatType;
+    }
+    
+    /**
+     * Set the type of flat for this application.
+     * 
+     * @param flatType The flat type to set
+     */
+    public void setFlatType(String flatType) {
+        this.flatType = flatType;
+    }
+
+    /**
+     * Check if the application is eligible for booking.
+     * 
+     * @return true if application can be booked, false otherwise
+     */
+    public boolean isEligibleForBooking() {
+        return STATUS_SUCCESSFUL.equals(status) && 
+            flatTypeBooked == null;
+    }
+
+    /**
+     * Validate flat type against project availability.
+     * 
+     * @param flatType The flat type to validate
+     * @return true if flat type is valid and available, false otherwise
+     */
+    public boolean validateFlatType(String flatType) {
+        return project.hasFlatType(flatType) && 
+            project.getRemainingUnits(flatType) > 0;
     }
 }

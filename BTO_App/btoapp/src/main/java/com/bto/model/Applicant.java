@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
 public class Applicant extends User {
     private Application currentApplication;
     private List<Enquiry> enquiries;
+    private String bookedFlatType;
+    private String bookedProject;
     
     /**
      * Constructor for Applicant.
@@ -28,52 +30,67 @@ public class Applicant extends User {
      * Apply for a BTO project.
      * 
      * @param project The project to apply for
+     * @param flatType The type of flat to apply for
      * @return true if application is successful, false otherwise
      */
-    public boolean applyForProject(Project project) {
+    public boolean applyForProject(Project project, String flatType) {
         // Check if already has an application
         if (currentApplication != null) {
             return false;
         }
         
         // Check eligibility based on age and marital status
-        boolean eligible = isEligibleForProject(project);
+        boolean eligible = isEligibleForFlatType(flatType);
         if (!eligible) {
+            return false;
+        }
+        
+        // Check if project has the requested flat type
+        if (!project.hasFlatType(flatType)) {
             return false;
         }
         
         // Create new application
         currentApplication = new Application(this, project);
+        currentApplication.setFlatType(flatType);
+        
+        // Add the application to project
+        project.addApplication(currentApplication);
+        
+        // Add to data manager
+        if (dataManager != null) {
+            dataManager.addApplication(currentApplication);
+            dataManager.saveData();
+        }
+        
         return true;
     }
     
     /**
-     * Check if the applicant is eligible for the project based on age and marital status.
+     * Check if the applicant is eligible for the specified flat type based on age and marital status.
      * 
-     * @param project The project to check eligibility for
+     * @param flatType The type of flat to check eligibility for
      * @return true if eligible, false otherwise
      */
-    private boolean isEligibleForProject(Project project) {
+    public boolean isEligibleForFlatType(String flatType) {
         // Singles must be 35 or older and can only apply for 2-Room
-        if ("Single".equals(getMaritalStatus())) {
+        if (!"Married".equalsIgnoreCase(getMaritalStatus())) {
             if (getAge() < 35) {
                 return false;
             }
             
-            // Check if project has 2-Room flats
-            return project.hasFlatType("2-Room");
+            // Singles can only apply for 2-Room
+            return "2-Room".equalsIgnoreCase(flatType);
         }
-        // Married must be 21 or older
-        else if ("Married".equals(getMaritalStatus())) {
+        // Married must be 21 or older and can apply for any flat type
+        else {
             if (getAge() < 21) {
                 return false;
             }
             
-            // Married can apply for any flat type
-            return true;
+            // Married can apply for 2-Room or 3-Room
+            return "2-Room".equalsIgnoreCase(flatType) || "3-Room".equalsIgnoreCase(flatType);
         }
-        
-        return false;
     }
     
     /**
@@ -99,28 +116,16 @@ public class Applicant extends User {
             return false;
         }
         
-        // Set application status to WITHDRAWAL_REQUESTED
+        // Set withdrawal requested flag
         currentApplication.setWithdrawalRequested(true);
+        
+        // Save changes
+        if (dataManager != null) {
+            dataManager.saveData();
+        }
+        
         return true;
     }
-    
-/**
- * Edit an enquiry submitted by this applicant.
- * 
- * @param enquiryID The ID of the enquiry to edit (as a String)
- * @param text The new text for the enquiry
- * @return true if edit is successful, false otherwise
- */
-public boolean editEnquiry(String enquiryId, String text) {
-    for (Enquiry enquiry : enquiries) {
-        if (enquiry.getEnquiryId().equals(enquiryId)) {
-            enquiry.updateEnquiry(text);
-            return true;
-        }
-    }
-    
-    return false;
-}
     
     /**
      * Implementation of viewProjects from User.
@@ -131,22 +136,97 @@ public boolean editEnquiry(String enquiryId, String text) {
      */
     @Override
     public List<Project> viewProjects(Map<String, Object> filters) {
-        //List<Project> allProjects = DataManager.getInstance().getAllProjects();
-        List<Project> allProjects = dataManager.getAllProjects();
+        List<Project> allProjects = dataManager != null ? dataManager.getAllProjects() : new ArrayList<>();
         
         // Filter projects that are visible to applicants
         List<Project> visibleProjects = allProjects.stream()
             .filter(Project::isVisible)
             .collect(Collectors.toList());
         
+        // Filter by applicant eligibility
+        List<Project> eligibleProjects = visibleProjects.stream()
+            .filter(this::isEligibleForProject)
+            .collect(Collectors.toList());
+        
         // Apply additional filters if provided
         if (filters != null && !filters.isEmpty()) {
-            // Implementation of filters
+            if (filters.containsKey("neighborhood")) {
+                String neighborhood = (String) filters.get("neighborhood");
+                eligibleProjects = eligibleProjects.stream()
+                    .filter(p -> p.getNeighborhood().toLowerCase().contains(neighborhood.toLowerCase()))
+                    .collect(Collectors.toList());
+            }
+            
+            if (filters.containsKey("flatType")) {
+                String flatType = (String) filters.get("flatType");
+                eligibleProjects = eligibleProjects.stream()
+                    .filter(p -> p.hasFlatType(flatType))
+                    .collect(Collectors.toList());
+            }
         }
         
-        return visibleProjects;
+        // Add the project the applicant has already applied for (even if visibility is off)
+        if (currentApplication != null) {
+            Project appliedProject = currentApplication.getProject();
+            if (!eligibleProjects.contains(appliedProject)) {
+                eligibleProjects.add(appliedProject);
+            }
+        }
+        
+        return eligibleProjects;
     }
     
+    /**
+     * Check if the applicant is eligible for the project based on age and marital status.
+     * 
+     * @param project The project to check eligibility for
+     * @return true if eligible, false otherwise
+     */
+    private boolean isEligibleForProject(Project project) {
+        // Singles must be 35 or older and can only apply for 2-Room
+        if (!"Married".equalsIgnoreCase(getMaritalStatus())) {
+            if (getAge() < 35) {
+                return false;
+            }
+            
+            // Check if project has 2-Room flats
+            return project.hasFlatType("2-Room");
+        }
+        // Married must be 21 or older
+        else {
+            if (getAge() < 21) {
+                return false;
+            }
+            
+            // Check if project has either 2-Room or 3-Room flats
+            return project.hasFlatType("2-Room") || project.hasFlatType("3-Room");
+        }
+    }
+    
+    /**
+     * Submit an enquiry about a project.
+     * 
+     * @param project The project to submit enquiry for
+     * @param enquiryText The text of the enquiry
+     * @return The created Enquiry object, or null if submission fails
+     */
+    @Override
+    public Enquiry submitEnquiry(Project project, String enquiryText) {
+        Enquiry enquiry = new Enquiry(this, project, enquiryText);
+        
+        // Add to project
+        project.addEnquiry(enquiry);
+        
+        // Add to applicant's list
+        this.enquiries.add(enquiry);
+        
+        // Save to data manager
+        if (dataManager != null) {
+            dataManager.saveEnquiry(enquiry);
+        }
+        
+        return enquiry;
+    }
     // Getters and setters
     public Application getCurrentApplication() {
         return currentApplication;
@@ -163,14 +243,20 @@ public boolean editEnquiry(String enquiryId, String text) {
     public void addEnquiry(Enquiry enquiry) {
         this.enquiries.add(enquiry);
     }
-
-    /////////////
-    /**
-     * Check if the applicant is married.
-     * 
-     * @return true if married, false if single
-     */
-    public boolean isMarried() {
-        return "Married".equals(getMaritalStatus());
+    
+    public String getBookedFlatType() {
+        return bookedFlatType;
+    }
+    
+    public void setBookedFlatType(String bookedFlatType) {
+        this.bookedFlatType = bookedFlatType;
+    }
+    
+    public String getBookedProject() {
+        return bookedProject;
+    }
+    
+    public void setBookedProject(String bookedProject) {
+        this.bookedProject = bookedProject;
     }
 }

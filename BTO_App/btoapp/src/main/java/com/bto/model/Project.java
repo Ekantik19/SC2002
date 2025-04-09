@@ -10,7 +10,7 @@ import java.util.Map;
  * Represents a BTO project in the system.
  */
 public class Project {
-    private int projectID;
+    //private int projectID;
     private String projectName;
     private String neighborhood;
     private Map<String, Integer> flatTypes; // Flat type -> Number of units
@@ -27,16 +27,15 @@ public class Project {
     /**
      * Constructor for Project.
      * 
-     * @param projectID The unique identifier for the project
      * @param projectName The name of the project
      * @param neighborhood The neighborhood of the project
      * @param openingDate The opening date for applications
      * @param closingDate The closing date for applications
      * @param managerInCharge The HDB manager in charge of the project
      */
-    public Project(int projectID, String projectName, String neighborhood, 
+    public Project(String projectName, String neighborhood, 
                   Date openingDate, Date closingDate, HDBManager managerInCharge) {
-        this.projectID = projectID;
+        //this.projectID = projectID;
         this.projectName = projectName;
         this.neighborhood = neighborhood;
         this.openingDate = openingDate;
@@ -152,10 +151,10 @@ public class Project {
         return true;
     }
     
-    // Getters and setters
-    public int getProjectID() {
-        return projectID;
-    }
+    // // Getters and setters
+    // public int getProjectID() {
+    //     return projectID;
+    // }
     
     public String getProjectName() {
         return projectName;
@@ -247,5 +246,19 @@ public class Project {
      */
     public int getAvailableOfficerSlots() {
         return getMaxOfficerSlots() - getAssignedOfficers().size();
+    }
+
+    /**
+     * Increase the number of units for a flat type (for testing cleanup).
+     * 
+     * @param flatType The flat type to increment
+     * @return true if successful, false otherwise
+     */
+    public boolean incrementUnits(String flatType) {
+        if (!flatTypes.containsKey(flatType)) {
+            return false;
+        }
+        flatTypes.put(flatType, flatTypes.get(flatType) + 1);
+        return true;
     }
 }

@@ -1,434 +1,475 @@
 package com.bto.view;
 
 import java.util.List;
-import java.util.Scanner;
 
 import com.bto.controller.EnquiryController;
+import com.bto.controller.ProjectController;
+import com.bto.model.Applicant;
 import com.bto.model.Enquiry;
+import com.bto.model.HDBManager;
+import com.bto.model.HDBOfficer;
 import com.bto.model.Project;
 import com.bto.model.User;
+import com.bto.view.abstracts.ARenderView;
 
 /**
  * View class for managing enquiries in the BTO Management System.
  * Allows users to create, view, edit, and delete enquiries.
  */
-public class EnquiryView {
-    private Scanner scanner;
+public class EnquiryView extends ARenderView {
     private EnquiryController enquiryController;
+    private ProjectController projectController;
     private User currentUser;
 
     /**
      * Constructor for EnquiryView.
      *
-     * @param scanner Scanner for user input
      * @param enquiryController Controller for managing enquiries
+     * @param projectController Controller for accessing projects
      * @param currentUser The currently logged in user
      */
-    public EnquiryView(Scanner scanner, EnquiryController enquiryController, User currentUser) {
-        this.scanner = scanner;
+    public EnquiryView(EnquiryController enquiryController, ProjectController projectController, User currentUser) {
+        super();
         this.enquiryController = enquiryController;
+        this.projectController = projectController;
         this.currentUser = currentUser;
     }
 
     /**
-     * Display the main enquiry management menu.
+     * Renders the application based on the selection.
+     *
+     * @param selection The selection made by the user for navigation.
      */
-    public void displayEnquiryMenu() {
-        boolean exit = false;
+    @Override
+    public void renderApp(int selection) {
+        clearCLI();
         
-        while (!exit) {
-            System.out.println("\n=== Enquiry Management ===");
-            System.out.println("1. Create New Enquiry");
-            System.out.println("2. View My Enquiries");
+        switch (selection) {
+            case 0:
+                renderChoice();
+                break;
+            case 1:
+                createEnquiry();
+                break;
+            case 2:
+                viewEnquiries();
+                break;
+            case 3:
+                if (currentUser instanceof Applicant) {
+                    editEnquiry();
+                } else {
+                    System.out.println("Only applicants can edit enquiries.");
+                    pressEnterToContinue();
+                    renderApp(0);
+                }
+                break;
+            case 4:
+                if (currentUser instanceof Applicant) {
+                    deleteEnquiry();
+                } else {
+                    System.out.println("Only applicants can delete enquiries.");
+                    pressEnterToContinue();
+                    renderApp(0);
+                }
+                break;
+            case 5:
+                if (currentUser instanceof HDBOfficer || currentUser instanceof HDBManager) {
+                    viewProjectEnquiries();
+                } else {
+                    System.out.println("Access denied. Only HDB staff can access this function.");
+                    pressEnterToContinue();
+                    renderApp(0);
+                }
+                break;
+            case 6:
+                if (currentUser instanceof HDBOfficer || currentUser instanceof HDBManager) {
+                    respondToEnquiry();
+                } else {
+                    System.out.println("Access denied. Only HDB staff can access this function.");
+                    pressEnterToContinue();
+                    renderApp(0);
+                }
+                break;
+            default:
+                System.out.println("Invalid option selected.");
+                delay(1);
+                renderApp(0);
+                break;
+        }
+    }
+
+    /**
+     * Renders the choices available to the user.
+     */
+    @Override
+    public void renderChoice() {
+        printBorder("Enquiry Management");
+        System.out.println("1. Create New Enquiry");
+        System.out.println("2. View My Enquiries");
+        
+        // Options for applicants
+        if (currentUser instanceof Applicant) {
             System.out.println("3. Edit Enquiry");
             System.out.println("4. Delete Enquiry");
-            System.out.println("5. Back to Main Menu");
-            
-            System.out.print("Enter your choice: ");
-            String choice = scanner.nextLine();
-            
-            switch (choice) {
-                case "1":
-                    createEnquiry();
-                    break;
-                case "2":
-                    viewUserEnquiries();
-                    break;
-                case "3":
-                    editEnquiry();
-                    break;
-                case "4":
-                    deleteEnquiry();
-                    break;
-                case "5":
-                    exit = true;
-                    break;
-                default:
-                    System.out.println("Invalid option. Please try again.");
-            }
         }
+        
+        // Options for HDB Officers and Managers
+        if (currentUser instanceof HDBOfficer || currentUser instanceof HDBManager) {
+            System.out.println("5. View Project Enquiries");
+            System.out.println("6. Respond to Enquiry");
+        }
+        
+        System.out.println("0. Return to Main Menu");
+        
+        int maxOption = (currentUser instanceof Applicant) ? 4 :
+                        (currentUser instanceof HDBOfficer || currentUser instanceof HDBManager) ? 6 : 2;
+        
+        int choice = getInputInt("Enter your choice: ", maxOption);
+        renderApp(choice);
     }
     
     /**
      * Create a new enquiry about a project.
      */
     private void createEnquiry() {
-        // Get available projects
-        List<Project> availableProjects = enquiryController.getAvailableProjects(currentUser);
+        printBorder("Create New Enquiry");
+        
+        // Get and display available projects
+        List<Project> availableProjects = projectController.getAvailableProjects(currentUser);
         
         if (availableProjects.isEmpty()) {
             System.out.println("No projects available for enquiry.");
+            pressEnterToContinue();
+            renderApp(0);
             return;
         }
         
-        // Display available projects
-        System.out.println("\n=== Available Projects ===");
         for (int i = 0; i < availableProjects.size(); i++) {
             Project project = availableProjects.get(i);
             System.out.println((i + 1) + ". " + project.getProjectName() + " - " + project.getNeighborhood());
         }
         
-        // Get project selection
-        System.out.print("Select a project (enter number): ");
-        int projectIndex;
-        try {
-            projectIndex = Integer.parseInt(scanner.nextLine()) - 1;
-            if (projectIndex < 0 || projectIndex >= availableProjects.size()) {
-                System.out.println("Invalid project selection.");
-                return;
-            }
-        } catch (NumberFormatException e) {
-            System.out.println("Please enter a valid number.");
+        // Get project selection and enquiry text
+        int projectChoice = getInputInt("\nSelect a project (0 to cancel): ", availableProjects.size());
+        if (projectChoice == 0) {
+            renderApp(0);
             return;
         }
         
-        Project selectedProject = availableProjects.get(projectIndex);
-        
-        // Get enquiry text
-        System.out.println("\nEnter your enquiry about " + selectedProject.getProjectName() + ":");
-        String enquiryText = scanner.nextLine();
+        Project selectedProject = availableProjects.get(projectChoice - 1);
+        String enquiryText = getInputString("\nEnter your enquiry about " + selectedProject.getProjectName() + ":\n");
         
         if (enquiryText.trim().isEmpty()) {
             System.out.println("Enquiry cannot be empty.");
+            pressEnterToContinue();
+            renderApp(0);
             return;
         }
         
-        // Create the enquiry
+        // Submit the enquiry
         boolean success = enquiryController.createEnquiry(currentUser, selectedProject, enquiryText);
-        
-        if (success) {
-            System.out.println("Enquiry submitted successfully.");
-        } else {
-            System.out.println("Failed to submit enquiry. Please try again.");
-        }
+        System.out.println(success ? "Enquiry submitted successfully." : "Failed to submit enquiry.");
+        pressEnterToContinue();
+        renderApp(0);
     }
     
     /**
      * View all enquiries created by the current user.
      */
-    private void viewUserEnquiries() {
+    private void viewEnquiries() {
+        printBorder("My Enquiries");
+        
         List<Enquiry> userEnquiries = enquiryController.getUserEnquiries(currentUser);
         
         if (userEnquiries.isEmpty()) {
             System.out.println("You have no enquiries.");
+            pressEnterToContinue();
+            renderApp(0);
             return;
         }
         
-        System.out.println("\n=== Your Enquiries ===");
-        for (int i = 0; i < userEnquiries.size(); i++) {
-            Enquiry enquiry = userEnquiries.get(i);
-            System.out.println("ID: " + enquiry.getEnquiryId());
-            System.out.println("Project: " + enquiry.getProject().getProjectName());
-            System.out.println("Date: " + enquiry.getCreationDate());
-            System.out.println("Enquiry: " + enquiry.getEnquiryText());
-            
-            if (enquiry.getResponse() != null && !enquiry.getResponse().isEmpty()) {
-                System.out.println("Response: " + enquiry.getResponse());
-            } else {
-                System.out.println("Response: No response yet");
-            }
-            System.out.println("------------------------------");
-        }
+        displayEnquiries(userEnquiries);
+        pressEnterToContinue();
+        renderApp(0);
     }
     
     /**
      * Edit an existing enquiry.
      */
     private void editEnquiry() {
+        printBorder("Edit Enquiry");
+        
+        Applicant applicant = (Applicant) currentUser;
         List<Enquiry> userEnquiries = enquiryController.getUserEnquiries(currentUser);
         
         if (userEnquiries.isEmpty()) {
             System.out.println("You have no enquiries to edit.");
+            pressEnterToContinue();
+            renderApp(0);
             return;
         }
         
-        // Display enquiries with IDs
-        System.out.println("\n=== Your Enquiries ===");
-        for (Enquiry enquiry : userEnquiries) {
-            System.out.println("ID: " + enquiry.getEnquiryId() + " - Project: " + 
-                              enquiry.getProject().getProjectName() + " - " + 
-                              enquiry.getEnquiryText().substring(0, Math.min(30, enquiry.getEnquiryText().length())) + 
-                              (enquiry.getEnquiryText().length() > 30 ? "..." : ""));
+        // Display enquiries and mark which ones can be edited
+        for (int i = 0; i < userEnquiries.size(); i++) {
+            Enquiry enquiry = userEnquiries.get(i);
+            System.out.println((i + 1) + ". Project: " + enquiry.getProject().getProjectName());
+            System.out.println("   Enquiry: " + enquiry.getEnquiryText());
+            System.out.println("   Status: " + (enquiry.hasResponse() ? "Already responded (cannot edit)" : "Can be edited"));
+            System.out.println("-------------------------------------------");
         }
         
-        // Get enquiry ID to edit
-        System.out.print("\nEnter the ID of the enquiry you want to edit: ");
-        String enquiryId = scanner.nextLine().trim();
-        if (enquiryId.isEmpty()) {
-            System.out.println("Please enter a valid ID.");
+        // Get enquiry to edit
+        int enquiryChoice = getInputInt("\nSelect an enquiry to edit (0 to cancel): ", userEnquiries.size());
+        if (enquiryChoice == 0) {
+            renderApp(0);
             return;
         }
         
-        // Find the enquiry
-        Enquiry enquiryToEdit = null;
-        for (Enquiry enquiry : userEnquiries) {
-            if (enquiry.getEnquiryId().equals(enquiryId)) {
-                enquiryToEdit = enquiry;
-                break;
-            }
-        }
+        Enquiry selectedEnquiry = userEnquiries.get(enquiryChoice - 1);
         
-        if (enquiryToEdit == null) {
-            System.out.println("Enquiry not found. Please check the ID and try again.");
+        if (selectedEnquiry.hasResponse()) {
+            System.out.println("This enquiry already has a response and cannot be edited.");
+            pressEnterToContinue();
+            renderApp(0);
             return;
         }
         
-        // Get new text
-        System.out.println("Current enquiry: " + enquiryToEdit.getEnquiryText());
-        System.out.println("Enter new enquiry text:");
-        String newText = scanner.nextLine();
+        // Get new text and update
+        System.out.println("\nCurrent enquiry: " + selectedEnquiry.getEnquiryText());
+        String newText = getInputString("Enter new enquiry text:\n");
         
         if (newText.trim().isEmpty()) {
             System.out.println("Enquiry cannot be empty.");
+            pressEnterToContinue();
+            renderApp(0);
             return;
         }
         
-        // Update the enquiry
-        boolean success = enquiryController.updateEnquiry(enquiryToEdit, newText);
+        boolean success = enquiryController.editEnquiry(
+            applicant, 
+            selectedEnquiry.getProject().getProjectName(), 
+            selectedEnquiry.getEnquiryText(), 
+            newText
+        );
         
-        if (success) {
-            System.out.println("Enquiry updated successfully.");
-        } else {
-            System.out.println("Failed to update enquiry. Please try again.");
-        }
+        System.out.println(success ? "Enquiry updated successfully." : "Failed to update enquiry.");
+        pressEnterToContinue();
+        renderApp(0);
     }
     
     /**
      * Delete an existing enquiry.
      */
     private void deleteEnquiry() {
+        printBorder("Delete Enquiry");
+        
+        Applicant applicant = (Applicant) currentUser;
         List<Enquiry> userEnquiries = enquiryController.getUserEnquiries(currentUser);
         
         if (userEnquiries.isEmpty()) {
             System.out.println("You have no enquiries to delete.");
+            pressEnterToContinue();
+            renderApp(0);
             return;
         }
         
-        // Display enquiries with IDs
-        System.out.println("\n=== Your Enquiries ===");
-        for (Enquiry enquiry : userEnquiries) {
-            System.out.println("ID: " + enquiry.getEnquiryId() + " - Project: " + 
-                              enquiry.getProject().getProjectName() + " - " + 
-                              enquiry.getEnquiryText().substring(0, Math.min(30, enquiry.getEnquiryText().length())) + 
-                              (enquiry.getEnquiryText().length() > 30 ? "..." : ""));
-        }
+        // Display enquiries
+        displayEnquiries(userEnquiries);
         
-        // Get enquiry ID to delete
-        System.out.print("\nEnter the ID of the enquiry you want to delete: ");
-        String enquiryId = scanner.nextLine().trim();
-        if (enquiryId.isEmpty()) {
-            System.out.println("Please enter a valid ID.");
+        // Get enquiry to delete
+        int enquiryChoice = getInputInt("\nSelect an enquiry to delete (0 to cancel): ", userEnquiries.size());
+        if (enquiryChoice == 0) {
+            renderApp(0);
             return;
         }
         
-        // Find the enquiry
-        Enquiry enquiryToDelete = null;
-        for (Enquiry enquiry : userEnquiries) {
-            if (enquiry.getEnquiryId().equals(enquiryId)) {
-                enquiryToDelete = enquiry;
-                break;
-            }
-        }
+        Enquiry selectedEnquiry = userEnquiries.get(enquiryChoice - 1);
         
-        if (enquiryToDelete == null) {
-            System.out.println("Enquiry not found. Please check the ID and try again.");
-            return;
-        }
-        
-        // Confirm deletion
-        System.out.print("Are you sure you want to delete this enquiry? (y/n): ");
-        String confirmation = scanner.nextLine().trim().toLowerCase();
-        
-        if (!confirmation.equals("y")) {
+        // Confirm and delete
+        String confirm = getInputString("Are you sure you want to delete this enquiry? (Y/N): ");
+        if (!"Y".equalsIgnoreCase(confirm)) {
             System.out.println("Deletion cancelled.");
+            renderApp(0);
             return;
         }
         
-        // Delete the enquiry
-        boolean success = enquiryController.deleteEnquiry(enquiryToDelete);
+        boolean success = enquiryController.deleteEnquiry(
+            applicant, 
+            selectedEnquiry.getProject().getProjectName(), 
+            selectedEnquiry.getEnquiryText()
+        );
         
-        if (success) {
-            System.out.println("Enquiry deleted successfully.");
-        } else {
-            System.out.println("Failed to delete enquiry. Please try again.");
-        }
-    }
-    
-    /**
-     * Display the interface for viewing and responding to enquiries (for HDB Officers and Managers).
-     */
-    public void displayEnquiryManagementForStaff() {
-        boolean exit = false;
-        
-        while (!exit) {
-            System.out.println("\n=== Enquiry Management for Staff ===");
-            System.out.println("1. View Project Enquiries");
-            System.out.println("2. Respond to Enquiry");
-            System.out.println("3. Back to Main Menu");
-            
-            System.out.print("Enter your choice: ");
-            String choice = scanner.nextLine();
-            
-            switch (choice) {
-                case "1":
-                    viewProjectEnquiries();
-                    break;
-                case "2":
-                    respondToEnquiry();
-                    break;
-                case "3":
-                    exit = true;
-                    break;
-                default:
-                    System.out.println("Invalid option. Please try again.");
-            }
-        }
+        System.out.println(success ? "Enquiry deleted successfully." : "Failed to delete enquiry.");
+        pressEnterToContinue();
+        renderApp(0);
     }
     
     /**
      * View enquiries for projects the staff member is handling.
      */
     private void viewProjectEnquiries() {
-        List<Project> staffProjects = enquiryController.getStaffProjects(currentUser);
+        printBorder("View Project Enquiries");
         
+        List<Project> staffProjects = getStaffProjects();
         if (staffProjects.isEmpty()) {
             System.out.println("You are not handling any projects.");
+            pressEnterToContinue();
+            renderApp(0);
             return;
         }
         
         // Display projects
-        System.out.println("\n=== Your Projects ===");
         for (int i = 0; i < staffProjects.size(); i++) {
             Project project = staffProjects.get(i);
             System.out.println((i + 1) + ". " + project.getProjectName() + " - " + project.getNeighborhood());
         }
         
-        // Get project selection
-        System.out.print("Select a project to view enquiries (enter number): ");
-        int projectIndex;
-        try {
-            projectIndex = Integer.parseInt(scanner.nextLine()) - 1;
-            if (projectIndex < 0 || projectIndex >= staffProjects.size()) {
-                System.out.println("Invalid project selection.");
-                return;
-            }
-        } catch (NumberFormatException e) {
-            System.out.println("Please enter a valid number.");
+        // Select project and display enquiries
+        int projectChoice = getInputInt("\nSelect a project (0 to cancel): ", staffProjects.size());
+        if (projectChoice == 0) {
+            renderApp(0);
             return;
         }
         
-        Project selectedProject = staffProjects.get(projectIndex);
-        
-        // Get and display enquiries for the selected project
-        List<Enquiry> projectEnquiries = enquiryController.getProjectEnquiries(selectedProject);
+        Project selectedProject = staffProjects.get(projectChoice - 1);
+        List<Enquiry> projectEnquiries = getProjectEnquiries(selectedProject);
         
         if (projectEnquiries.isEmpty()) {
             System.out.println("No enquiries for this project.");
+            pressEnterToContinue();
+            renderApp(0);
             return;
         }
         
-        System.out.println("\n=== Enquiries for " + selectedProject.getProjectName() + " ===");
-        for (Enquiry enquiry : projectEnquiries) {
-            System.out.println("ID: " + enquiry.getEnquiryId());
-            System.out.println("From: " + enquiry.getUser().getName() + " (" + enquiry.getUser().getUserID() + ")");
-            System.out.println("Date: " + enquiry.getCreationDate());
-            System.out.println("Enquiry: " + enquiry.getEnquiryText());
-            
-            if (enquiry.getResponse() != null && !enquiry.getResponse().isEmpty()) {
-                System.out.println("Response: " + enquiry.getResponse());
-            } else {
-                System.out.println("Response: No response yet");
-            }
-            System.out.println("------------------------------");
-        }
+        printSingleBorder("Enquiries for " + selectedProject.getProjectName());
+        displayEnquiries(projectEnquiries);
+        
+        pressEnterToContinue();
+        renderApp(0);
     }
     
     /**
      * Respond to an enquiry.
      */
     private void respondToEnquiry() {
-        List<Project> staffProjects = enquiryController.getStaffProjects(currentUser);
-        List<Enquiry> pendingEnquiries = enquiryController.getPendingEnquiries(staffProjects);
+        printBorder("Respond to Enquiry");
         
+        // Get pending enquiries for all staff projects
+        List<Project> staffProjects = getStaffProjects();
+        if (staffProjects.isEmpty()) {
+            System.out.println("You are not handling any projects.");
+            pressEnterToContinue();
+            renderApp(0);
+            return;
+        }
+        
+        List<Enquiry> pendingEnquiries = getPendingEnquiries(staffProjects);
         if (pendingEnquiries.isEmpty()) {
             System.out.println("No pending enquiries to respond to.");
+            pressEnterToContinue();
+            renderApp(0);
             return;
         }
         
         // Display pending enquiries
-        System.out.println("\n=== Pending Enquiries ===");
-        for (Enquiry enquiry : pendingEnquiries) {
-            System.out.println("ID: " + enquiry.getEnquiryId() + 
-                              " - Project: " + enquiry.getProject().getProjectName() +
-                              " - From: " + enquiry.getUser().getName() +
-                              " - " + enquiry.getEnquiryText().substring(0, Math.min(30, enquiry.getEnquiryText().length())) + 
-                              (enquiry.getEnquiryText().length() > 30 ? "..." : ""));
+        printSingleUnderline("Pending Enquiries");
+        for (int i = 0; i < pendingEnquiries.size(); i++) {
+            Enquiry enquiry = pendingEnquiries.get(i);
+            System.out.println((i + 1) + ". Project: " + enquiry.getProject().getProjectName());
+            System.out.println("   From: " + enquiry.getUser().getUserID());
+            System.out.println("   Enquiry: " + enquiry.getEnquiryText());
+            System.out.println("-------------------------------------------");
         }
         
-        // Get enquiry ID to respond to
-        System.out.print("\nEnter the ID of the enquiry you want to respond to: ");
-        String enquiryId = scanner.nextLine().trim();
-        if (enquiryId.isEmpty()) {
-            System.out.println("Please enter a valid ID.");
+        // Get enquiry to respond to
+        int enquiryChoice = getInputInt("\nSelect an enquiry to respond to (0 to cancel): ", pendingEnquiries.size());
+        if (enquiryChoice == 0) {
+            renderApp(0);
             return;
         }
         
-        // Find the enquiry
-        Enquiry enquiryToRespond = null;
-        for (Enquiry enquiry : pendingEnquiries) {
-            if (enquiry.getEnquiryId().equals(enquiryId)) {
-                enquiryToRespond = enquiry;
-                break;
-            }
-        }
-        
-        if (enquiryToRespond == null) {
-            System.out.println("Enquiry not found. Please check the ID and try again.");
-            return;
-        }
-        
-        // Display the enquiry details
-        System.out.println("\n=== Enquiry Details ===");
-        System.out.println("From: " + enquiryToRespond.getUser().getName());
-        System.out.println("Project: " + enquiryToRespond.getProject().getProjectName());
-        System.out.println("Enquiry: " + enquiryToRespond.getEnquiryText());
-        
-        // Get response
-        System.out.println("\nEnter your response:");
-        String response = scanner.nextLine();
+        Enquiry selectedEnquiry = pendingEnquiries.get(enquiryChoice - 1);
+        String response = getInputString("\nEnter your response:\n");
         
         if (response.trim().isEmpty()) {
             System.out.println("Response cannot be empty.");
+            pressEnterToContinue();
+            renderApp(0);
             return;
         }
         
-        // Add the response
-        boolean success = enquiryController.respondToEnquiry(enquiryToRespond, response);
+        // Submit response
+        boolean success = enquiryController.respondToEnquiry(
+            currentUser,
+            selectedEnquiry.getUser().getUserID(),
+            selectedEnquiry.getProject().getProjectName(),
+            response
+        );
         
-        if (success) {
-            System.out.println("Response submitted successfully.");
+        System.out.println(success ? "Response submitted successfully." : "Failed to submit response.");
+        pressEnterToContinue();
+        renderApp(0);
+    }
+    
+    /**
+     * Get a list of projects the current staff member is handling.
+     * 
+     * @return List of projects
+     */
+    private List<Project> getStaffProjects() {
+        if (currentUser instanceof HDBOfficer) {
+            return ((HDBOfficer) currentUser).getAssignedProject() != null ?
+                   List.of(((HDBOfficer) currentUser).getAssignedProject()) : List.of();
+        } else if (currentUser instanceof HDBManager) {
+            return ((HDBManager) currentUser).getCreatedProjects();
+        }
+        return List.of();
+    }
+    
+    /**
+     * Get enquiries for a specific project based on user role.
+     * 
+     * @param project The project to get enquiries for
+     * @return List of enquiries for the project
+     */
+    private List<Enquiry> getProjectEnquiries(Project project) {
+        if (currentUser instanceof HDBOfficer) {
+            return enquiryController.getProjectEnquiries(
+                (HDBOfficer) currentUser, project.getProjectName());
         } else {
-            System.out.println("Failed to submit response. Please try again.");
+            return enquiryController.getProjectEnquiries(project);
+        }
+    }
+    
+    /**
+     * Get pending enquiries for a list of projects.
+     * 
+     * @param projects List of projects to check
+     * @return List of pending enquiries
+     */
+    private List<Enquiry> getPendingEnquiries(List<Project> projects) {
+        return enquiryController.getPendingEnquiries(projects);
+    }
+    
+    /**
+     * Display a list of enquiries in a formatted manner.
+     * 
+     * @param enquiries The enquiries to display
+     */
+    private void displayEnquiries(List<Enquiry> enquiries) {
+        for (int i = 0; i < enquiries.size(); i++) {
+            Enquiry enquiry = enquiries.get(i);
+            System.out.println((i + 1) + ". Project: " + enquiry.getProject().getProjectName());
+            System.out.println("   Date: " + enquiry.getCreationDate());
+            System.out.println("   Enquiry: " + enquiry.getEnquiryText());
+            
+            if (enquiry.hasResponse()) {
+                System.out.println("   Response: " + enquiry.getResponse());
+                System.out.println("   Response Date: " + enquiry.getResponseDate());
+            } else {
+                System.out.println("   Status: Pending response");
+            }
+            System.out.println("-------------------------------------------");
         }
     }
 }

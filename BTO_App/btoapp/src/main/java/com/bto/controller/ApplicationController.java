@@ -18,66 +18,157 @@ import com.bto.model.User;
 public class ApplicationController {
     private DataManager dataManager;
     private AuthController authController;
+    private ProjectController projectController;
     
-    // /**
-    //  * Constructor for ApplicationController.
-    //  */
-    // public ApplicationController() {
-    //     this.dataManager = DataManager.getInstance();
-    //     this.authController = new AuthController();
-    // }
-
-     /**
+    /**
      * Constructor for ApplicationController.
      * 
      * @param dataManager The data manager to be used
      * @param authController The auth controller to be used
+     * @param projectController The project controller to be used
      */
-    public ApplicationController(DataManager dataManager, AuthController authController) {
+    public ApplicationController(DataManager dataManager, AuthController authController, ProjectController projectController) {
         this.dataManager = dataManager;
         this.authController = authController;
+        this.projectController = projectController;
     }
     
     /**
-     * Apply for a BTO project.
+     * Apply for a project as an applicant.
      * 
-     * @param projectID The ID of the project to apply for
+     * @param applicant The applicant applying for the project
+     * @param projectName The name of the project to apply for
+     * @param flatType The type of flat to apply for
      * @return true if application is successful, false otherwise
      */
-    public boolean applyForProject(int projectID) {
-        User currentUser = authController.getCurrentUser();
+    public boolean applyForProject(Applicant applicant, String projectName, String flatType) {
+        // Check if applicant already has an existing application
+        Application existingApplication = getApplication(applicant);
+        if (existingApplication != null) {
+            return false; // Already has an application
+        }
         
-        // Only applicants can apply for projects
-        if (!(currentUser instanceof Applicant)) {
+        // Find the project by name
+        Project project = projectController.getProjectByName(projectName);
+        
+        // Project must exist and be visible
+        if (project == null || !project.isVisible()) {
             return false;
         }
         
-        Applicant applicant = (Applicant) currentUser;
+        // Validate applicant eligibility based on age and marital status
+        boolean isMarried = "Married".equalsIgnoreCase(applicant.getMaritalStatus());
         
-        // Find the project by ID
-        Project project = findProjectByID(projectID);
+        // Singles 35+ can only apply for 2-Room
+        if (!isMarried) {
+            if (applicant.getAge() < 35) {
+                return false; // Singles below 35 cannot apply
+            }
+            
+            // Check if project has 2-Room flats and applicant wants 2-Room
+            if (!project.hasFlatType("2-Room") || !"2-Room".equalsIgnoreCase(flatType)) {
+                return false;
+            }
+        } 
+        // Married applicants 21+ can apply for 2-Room or 3-Room
+        else {
+            if (applicant.getAge() < 21) {
+                return false; // Married below 21 cannot apply
+            }
+            
+            // Check if project has the requested flat type
+            if (!project.hasFlatType(flatType)) {
+                return false;
+            }
+        }
+        
+        // Create the application
+        Application application = new Application(applicant, project);
+        application.setFlatType(flatType);
+        
+        // Add to data manager
+        dataManager.addApplication(application);
+        
+        // Set current application for applicant
+        applicant.setCurrentApplication(application);
+        
+        // Save changes
+        dataManager.saveData();
+        
+        return true;
+    }
+    
+    /**
+     * Apply for a project as an HDB Officer (in applicant capacity).
+     * 
+     * @param officer The HDB Officer applying as an applicant
+     * @param projectName The name of the project to apply for
+     * @return true if application is successful, false otherwise
+     */
+    public boolean applyForProject(HDBOfficer officer, String projectName) {
+        // Find the project by name
+        Project project = projectController.getProjectByName(projectName);
+        
         if (project == null) {
             return false;
         }
         
-        return applicant.applyForProject(project);
+        // Officers cannot apply for projects they are handling
+        if (officer.getAssignedProject() != null && 
+            officer.getAssignedProject().getProjectName().equals(projectName)) {
+            return false;
+        }
+        
+        // Create an Applicant from the officer's information
+        Applicant applicantView = new Applicant(
+            officer.getUserID(),
+            "password", // Using default password as shown in DataManager
+            officer.getAge(),
+            officer.getMaritalStatus()
+        );
+        
+        // Create and process application
+        Application application = new Application(applicantView, project);
+        
+        // Determine appropriate flat type based on marital status and age
+        String flatType;
+        if ("Married".equalsIgnoreCase(officer.getMaritalStatus())) {
+            // Married officers can apply for any flat type, defaulting to 3-Room if available
+            flatType = project.hasFlatType("3-Room") ? "3-Room" : "2-Room";
+        } else {
+            // Single officers can only apply for 2-Room
+            if (officer.getAge() < 35 || !project.hasFlatType("2-Room")) {
+                return false;
+            }
+            flatType = "2-Room";
+        }
+        
+        application.setFlatType(flatType);
+        project.addApplication(application);
+        dataManager.addApplication(application);
+        
+        // Save changes
+        dataManager.saveData();
+        
+        return true;
     }
     
     /**
-     * View the current application status.
+     * Get the application for a specific applicant.
      * 
-     * @return The status of the current application, or "No Application" if none exists
+     * @param applicant The applicant to get the application for
+     * @return The application if found, null otherwise
      */
-    public String viewApplicationStatus() {
-        User currentUser = authController.getCurrentUser();
+    public Application getApplication(Applicant applicant) {
+        List<Application> allApplications = dataManager.getAllApplications();
         
-        // Only applicants can view application status
-        if (!(currentUser instanceof Applicant)) {
-            return "Not an applicant";
+        for (Application app : allApplications) {
+            if (app.getApplicant().getUserID().equals(applicant.getUserID())) {
+                return app;
+            }
         }
         
-        Applicant applicant = (Applicant) currentUser;
-        return applicant.viewApplicationStatus();
+        return null;
     }
     
     /**
@@ -94,17 +185,96 @@ public class ApplicationController {
         }
         
         Applicant applicant = (Applicant) currentUser;
-        return applicant.requestWithdrawal();
+        return requestWithdrawal(applicant);
     }
     
     /**
-     * Approve or reject an application.
+     * Request withdrawal of an application for a specific applicant.
      * 
-     * @param applicationID The ID of the application
-     * @param approved Whether to approve or reject the application
-     * @return true if approval/rejection is successful, false otherwise
+     * @param applicant The applicant requesting withdrawal
+     * @return true if withdrawal request is successful, false otherwise
      */
-    public boolean processApplication(int applicationID, boolean approved) {
+    public boolean requestWithdrawal(Applicant applicant) {
+        // Find the application for this applicant
+        Application application = getApplication(applicant);
+        
+        if (application == null) {
+            return false;
+        }
+        
+        // Check application status - withdrawal only allowed for certain statuses
+        String status = application.getStatus();
+        if (!status.equals(Application.STATUS_PENDING) && 
+            !status.equals(Application.STATUS_SUCCESSFUL) &&
+            !status.equals(Application.STATUS_BOOKED)) {
+            return false;
+        }
+        
+        // Set withdrawal request flag
+        application.setWithdrawalRequested(true);
+        
+        // Save changes
+        dataManager.saveData();
+        
+        return true;
+    }
+    
+    /**
+     * Approve a withdrawal request for an application.
+     * 
+     * @param manager The HDB Manager approving the withdrawal
+     * @param userID The ID of the user whose application to withdraw
+     * @return true if withdrawal approval is successful, false otherwise
+     */
+    public boolean approveWithdrawal(HDBManager manager, String userID) {
+        // Find the application by user ID
+        Application application = findApplicationByUserID(userID);
+        
+        if (application == null) {
+            return false;
+        }
+        
+        // Check if withdrawal was actually requested
+        if (!application.isWithdrawalRequested()) {
+            return false;
+        }
+        
+        // If application was booked, return units to the project
+        if (Application.STATUS_BOOKED.equals(application.getStatus())) {
+            Project project = application.getProject();
+            String flatType = application.getFlatTypeBooked();
+            
+            if (flatType != null) {
+                project.incrementUnits(flatType);
+            }
+        }
+        
+        // Remove the application from the project
+        application.getProject().getApplications().remove(application);
+        
+        // Remove from data manager's applications list
+        dataManager.getAllApplications().remove(application);
+        
+        // Clear the applicant's current application
+        Applicant applicant = (Applicant) application.getApplicant();
+        if (applicant != null) {
+            applicant.setCurrentApplication(null);
+        }
+        
+        // Save changes
+        dataManager.saveData();
+        
+        return true;
+    }
+    
+    /**
+     * Process an application (approve, reject, or process withdrawal request).
+     * 
+     * @param userID The ID of the user whose application to process
+     * @param approved Whether to approve or reject the application/withdrawal
+     * @return true if processing is successful, false otherwise
+     */
+    public boolean processApplication(String userID, boolean approved) {
         User currentUser = authController.getCurrentUser();
         
         // Only managers can process applications
@@ -114,135 +284,276 @@ public class ApplicationController {
         
         HDBManager manager = (HDBManager) currentUser;
         
-        // Find the application by ID
-        Application application = findApplicationByID(applicationID);
+        // Find the application by user ID
+        Application application = findApplicationByUserID(userID);
         if (application == null) {
             return false;
         }
         
-        return manager.processApplication(application, approved);
+        // Check if this is a withdrawal request
+        if (application.isWithdrawalRequested()) {
+            if (approved) {
+                return approveWithdrawal(manager, userID);
+            } else {
+                // Reject withdrawal request - just remove the withdrawal flag
+                application.setWithdrawalRequested(false);
+                dataManager.saveData();
+                return true;
+            }
+        }
+        
+        // Regular application processing
+        if (approved) {
+            return approveApplication(manager, userID);
+        } else {
+            // Reject application
+            application.updateStatus(Application.STATUS_UNSUCCESSFUL);
+            dataManager.saveData();
+            return true;
+        }
     }
     
     /**
-     * Approve or reject a withdrawal request.
+     * Approve an application for a BTO project.
      * 
-     * @param applicationID The ID of the application
-     * @param approved Whether to approve or reject the withdrawal
-     * @return true if approval/rejection is successful, false otherwise
+     * @param manager The HDB Manager approving the application
+     * @param userID The ID of the user whose application to approve
+     * @return true if approval is successful, false otherwise
      */
-    public boolean processWithdrawalRequest(int applicationID, boolean approved) {
-        User currentUser = authController.getCurrentUser();
+    public boolean approveApplication(HDBManager manager, String userID) {
+        // Find the application by user ID
+        Application application = findApplicationByUserID(userID);
         
-        // Only managers can process withdrawal requests
-        if (!(currentUser instanceof HDBManager)) {
-            return false;
-        }
-        
-        HDBManager manager = (HDBManager) currentUser;
-        
-        // Find the application by ID
-        Application application = findApplicationByID(applicationID);
         if (application == null) {
             return false;
         }
         
-        return manager.processWithdrawalRequest(application, approved);
+        // Check if the project has available units
+        Project project = application.getProject();
+        
+        // Determine flat type eligibility
+        User applicant = application.getApplicant();
+        String flatType = application.getFlatType();
+        
+        if (applicant instanceof Applicant) {
+            Applicant applicantDetails = (Applicant) applicant;
+            
+            // Check flat type availability
+            if (!project.hasFlatType(flatType)) {
+                return false;
+            }
+        }
+        
+        // Update application status to Successful
+        application.updateStatus(Application.STATUS_SUCCESSFUL);
+        
+        // Save changes
+        dataManager.saveData();
+        
+        return true;
     }
     
     /**
-     * Book a flat for an application.
+     * Book a flat for an applicant.
      * 
-     * @param userID The ID of the applicant
+     * @param officer The HDB Officer processing the booking
+     * @param applicantID The ID of the applicant
+     * @param projectName The name of the project
      * @param flatType The type of flat to book
      * @return true if booking is successful, false otherwise
      */
-    public boolean bookFlat(String userID, String flatType) {
-        User currentUser = authController.getCurrentUser();
-        
-        // Only officers can book flats
-        if (!(currentUser instanceof HDBOfficer)) {
+    public boolean bookFlat(HDBOfficer officer, String applicantID, String projectName, String flatType) {
+        // Verify the officer is approved for a project
+        if (officer.getAssignedProject() == null || 
+            !officer.getAssignedProject().getProjectName().equals(projectName) || 
+            !HDBOfficer.STATUS_APPROVED.equals(officer.getRegistrationStatus())) {
             return false;
         }
         
-        HDBOfficer officer = (HDBOfficer) currentUser;
+        // Find the application by applicant ID and project name
+        Application application = null;
         
-        // Retrieve the application
-        Application application = officer.retrieveApplication(userID);
+        for (Application app : dataManager.getAllApplications()) {
+            if (app.getApplicant().getUserID().equals(applicantID) && 
+                app.getProject().getProjectName().equals(projectName)) {
+                application = app;
+                break;
+            }
+        }
+        
         if (application == null) {
+            return false;
+        }
+        
+        // Check if application status is successful
+        if (!Application.STATUS_SUCCESSFUL.equals(application.getStatus())) {
+            return false;
+        }
+        
+        // Check if the flat type is valid for the project
+        Project project = application.getProject();
+        if (!project.hasFlatType(flatType) || project.getRemainingUnits(flatType) <= 0) {
             return false;
         }
         
         // Book the flat
-        boolean booked = application.bookFlat(flatType);
-        if (booked) {
-            officer.updateApplicationStatus(application, Application.STATUS_BOOKED);
-            dataManager.saveData();
-        }
+        application.setFlatTypeBooked(flatType);
         
-        return booked;
+        // Decrement available units
+        project.decrementUnits(flatType);
+        
+        // Update application status to booked
+        application.updateStatus(Application.STATUS_BOOKED);
+        
+        // Update applicant's booked flat information
+        Applicant applicant = (Applicant) application.getApplicant();
+        applicant.setBookedFlatType(flatType);
+        applicant.setBookedProject(project.getProjectName());
+        
+        // Save changes
+        dataManager.saveData();
+        
+        return true;
     }
     
     /**
      * Generate a receipt for a flat booking.
      * 
-     * @param userID The ID of the applicant
-     * @return The generated receipt, or null if generation fails
+     * @param officer The HDB Officer generating the receipt
+     * @param applicantID The ID of the applicant
+     * @return The generated receipt as a string, or null if generation fails
      */
-    public Receipt generateReceipt(String userID) {
-        User currentUser = authController.getCurrentUser();
-        
-        // Only officers can generate receipts
-        if (!(currentUser instanceof HDBOfficer)) {
+    public String generateReceipt(HDBOfficer officer, String applicantID) {
+        // Verify the officer is approved for a project
+        if (officer.getAssignedProject() == null || 
+            !HDBOfficer.STATUS_APPROVED.equals(officer.getRegistrationStatus())) {
             return null;
         }
         
-        HDBOfficer officer = (HDBOfficer) currentUser;
-        
-        // Retrieve the application
-        Application application = officer.retrieveApplication(userID);
-        if (application == null) {
-            return null;
-        }
-        
-        return officer.generateReceipt(application);
-    }
-    
-    /**
-     * Find a project by its ID.
-     * 
-     * @param projectID The ID of the project to find
-     * @return The project if found, null otherwise
-     */
-    private Project findProjectByID(int projectID) {
-        List<Project> allProjects = dataManager.getAllProjects();
-        
-        for (Project project : allProjects) {
-            if (project.getProjectID() == projectID) {
-                return project;
+        // Find the application for this applicant
+        Application application = null;
+        for (Application app : dataManager.getAllApplications()) {
+            if (app.getApplicant().getUserID().equals(applicantID)) {
+                application = app;
+                break;
             }
         }
         
-        return null;
+        if (application == null || !Application.STATUS_BOOKED.equals(application.getStatus())) {
+            return null;
+        }
+        
+        // Generate a Receipt object
+        Receipt receipt = new Receipt(application, officer);
+        
+        // Call the printReceipt method to get a string representation
+        return receipt.printReceipt();
     }
     
     /**
-     * Find an application by its ID.
+     * Get the detailed profile of an applicant, including booking information.
      * 
-     * @param applicationID The ID of the application to find
+     * @param applicant The applicant whose profile to retrieve
+     * @return The applicant with complete profile information
+     */
+    public Applicant getApplicantProfile(Applicant applicant) {
+        // Find the application for this applicant to get booking details
+        Application application = getApplication(applicant);
+        
+        if (application != null && Application.STATUS_BOOKED.equals(application.getStatus())) {
+            // If application exists and is booked, update the applicant's booked flat type
+            applicant.setBookedFlatType(application.getFlatTypeBooked());
+            applicant.setBookedProject(application.getProject().getProjectName());
+        }
+        
+        return applicant;
+    }
+    
+    /**
+     * Find an application by the user ID of the applicant.
+     * 
+     * @param userID The ID of the user whose application to find
      * @return The application if found, null otherwise
      */
-    private Application findApplicationByID(int applicationID) {
+    private Application findApplicationByUserID(String userID) {
         List<Application> allApplications = dataManager.getAllApplications();
         
         for (Application application : allApplications) {
-            if (application.getApplicationID() == applicationID) {
+            if (application.getApplicant().getUserID().equals(userID)) {
                 return application;
             }
         }
         
         return null;
     }
+    
+    /**
+     * Directly withdraw an application for testing purposes only.
+     * Bypasses the request-approval process; not for main system use.
+     * 
+     * @param applicant The applicant whose application to withdraw
+     * @return true if withdrawn successfully, false otherwise
+     */
+    public boolean withdrawApplication(Applicant applicant) {
+        Application application = getApplication(applicant);
+        if (application == null) {
+            return false;
+        }
 
+        // If booked, restore flat unit
+        if (Application.STATUS_BOOKED.equals(application.getStatus()) && application.getFlatTypeBooked() != null) {
+            Project project = application.getProject();
+            String flatType = application.getFlatTypeBooked();
+            project.incrementUnits(flatType);
+        }
+
+        // Remove application
+        application.getProject().getApplications().remove(application);
+        dataManager.getAllApplications().remove(application);
+        applicant.setCurrentApplication(null);
+
+        // Save changes
+        dataManager.saveData();
+        return true;
+    }
+    
+    /**
+     * Withdraw an application for an HDB Officer.
+     * 
+     * @param officer The HDB Officer whose application to withdraw
+     * @return true if withdrawal is successful, false otherwise
+     */
+    public boolean withdrawApplication(HDBOfficer officer) {
+        // Find the application by officer ID
+        Application application = null;
+        for (Application app : dataManager.getAllApplications()) {
+            if (app.getApplicant().getUserID().equals(officer.getUserID())) {
+                application = app;
+                break;
+            }
+        }
+        
+        if (application == null) {
+            return false;
+        }
+        
+        // If booked, restore flat unit
+        if (Application.STATUS_BOOKED.equals(application.getStatus()) && application.getFlatTypeBooked() != null) {
+            Project project = application.getProject();
+            String flatType = application.getFlatTypeBooked();
+            project.incrementUnits(flatType);
+        }
+        
+        // Remove application
+        application.getProject().getApplications().remove(application);
+        dataManager.getAllApplications().remove(application);
+        
+        // Save changes
+        dataManager.saveData();
+        
+        return true;
+    }
+    
     /**
      * Get a list of applications with pending status for a list of projects.
      * 
@@ -282,157 +593,4 @@ public class ApplicationController {
         
         return withdrawalRequests;
     }
-
-    /**
- * Get applications with successful status for a project.
- * 
- * @param project The project to get successful applications for
- * @return List of successful applications
- */
-public List<Application> getSuccessfulApplications(Project project) {
-    List<Application> successfulApplications = new ArrayList<>();
-    
-    for (Application app : project.getApplications()) {
-        if (Application.STATUS_SUCCESSFUL.equals(app.getStatus())) {
-            successfulApplications.add(app);
-        }
-    }
-    
-    return successfulApplications;
-}
-
-/**
- * Get flat types that an applicant is eligible for.
- * 
- * @param applicant The applicant to check eligibility for
- * @return List of flat types the applicant is eligible for
- */
-public List<String> getEligibleFlatTypes(Applicant applicant) {
-    List<String> eligibleTypes = new ArrayList<>();
-    
-    // Singles aged 35 and above can only apply for 2-Room
-    if (!"Married".equalsIgnoreCase(applicant.getMaritalStatus()) && applicant.getAge() >= 35) {
-        eligibleTypes.add("2-Room");
-    }
-    // Married aged 21 and above can apply for any flat type
-    else if ("Married".equalsIgnoreCase(applicant.getMaritalStatus()) && applicant.getAge() >= 21) {
-        eligibleTypes.add("2-Room");
-        eligibleTypes.add("3-Room");
-    }
-    
-    return eligibleTypes;
-}
-
-/**
- * Book a flat for an application.
- * 
- * @param app The application to book a flat for
- * @param flatType The type of flat to book
- * @param officer The HDB Officer processing the booking
- * @return true if booking is successful, false otherwise
- */
-public boolean bookFlat(Application app, String flatType, HDBOfficer officer) {
-    // Check if application status is successful
-    if (!Application.STATUS_SUCCESSFUL.equals(app.getStatus())) {
-        return false;
-    }
-    
-    // Check if officer is assigned to the project
-    if (officer.getAssignedProject() == null || 
-        officer.getAssignedProject().getProjectID() != app.getProject().getProjectID()) {
-        return false;
-    }
-    
-    // Book the flat
-    boolean booked = app.bookFlat(flatType);
-    if (booked) {
-        officer.updateApplicationStatus(app, Application.STATUS_BOOKED);
-        dataManager.saveData();
-    }
-    
-    return booked;
-}
-
-/**
- * Get applications with booked status for a project.
- * 
- * @param project The project to get booked applications for
- * @return List of booked applications
- */
-public List<Application> getBookedApplications(Project project) {
-    List<Application> bookedApplications = new ArrayList<>();
-    
-    for (Application app : project.getApplications()) {
-        if (Application.STATUS_BOOKED.equals(app.getStatus())) {
-            bookedApplications.add(app);
-        }
-    }
-    
-    return bookedApplications;
-}
-
-    // /**
-    //  * Apply for a project as an HDB Officer (in applicant capacity).
-    //  * 
-    //  * @param projectID The ID of the project to apply for
-    //  * @param officer The HDB Officer applying as an applicant
-    //  * @return true if application is successful, false otherwise
-    //  */
-    // public boolean applyForProject(int projectID, HDBOfficer officer) {
-    //     // Find the project by ID
-    //     Project project = findProjectByID(projectID);
-    //     if (project == null) {
-    //         return false;
-    //     }
-        
-    //     // Officers cannot apply for projects they are handling
-    //     if (officer.getAssignedProject() != null && 
-    //         officer.getAssignedProject().getProjectID() == projectID) {
-    //         return false;
-    //     }
-        
-    //     // Create and process application
-    //     Application application = new Application(officer, project);
-    //     project.addApplication(application);
-    //     dataManager.saveApplication(application);
-        
-    //     return true;
-    // }
-
-    /**
-     * Apply for a project as an HDB Officer (in applicant capacity).
-     * 
-     * @param projectID The ID of the project to apply for
-     * @param officer The HDB Officer applying as an applicant
-     * @return true if application is successful, false otherwise
-     */
-    public boolean applyForProject(int projectID, HDBOfficer officer) {
-        // Find the project by ID
-        Project project = findProjectByID(projectID);
-        if (project == null) {
-            return false;
-        }
-        
-        // Officers cannot apply for projects they are handling
-        if (officer.getAssignedProject() != null && 
-            officer.getAssignedProject().getProjectID() == projectID) {
-            return false;
-        }
-        
-        // Create an Applicant from the officer's information
-        Applicant applicantView = new Applicant(
-            officer.getUserID(),
-            "password", // Using default password as shown in DataManager
-            officer.getAge(),
-            officer.getMaritalStatus()
-        );
-        
-        // Create and process application
-        Application application = new Application(applicantView, project);
-        project.addApplication(application);
-        dataManager.addApplication(application); // Changed from saveApplication to addApplication
-        
-        return true;
-    }
-
 }

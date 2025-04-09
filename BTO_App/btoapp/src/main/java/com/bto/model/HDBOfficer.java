@@ -3,12 +3,12 @@ package com.bto.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Represents an HDB officer who can help with application processing and flat booking.
+ * HDB Officers possess all applicant capabilities.
  */
-public class HDBOfficer extends User {
+public class HDBOfficer extends Applicant {
     private Project assignedProject;
     private String registrationStatus; // PENDING, APPROVED, REJECTED
     private List<Enquiry> handledEnquiries;
@@ -45,19 +45,23 @@ public class HDBOfficer extends User {
         }
         
         // Can't register if already applied for the project as an applicant
-        //DataManager dataManager = DataManager.getInstance();
-        List<Application> applications = dataManager.getAllApplications();
+        if (getCurrentApplication() != null && 
+            getCurrentApplication().getProject().getProjectName().equals(project.getProjectName())) {
+            return false;
+        }
         
-        for (Application app : applications) {
-            if (app.getApplicant().getUserID().equals(this.getUserID()) &&
-                app.getProject().getProjectID() == project.getProjectID()) {
-                return false;
-            }
+        // Check if project has available officer slots
+        if (project.getAvailableOfficerSlots() <= 0) {
+            return false;
         }
         
         // Set the project and update status to pending
         this.assignedProject = project;
         this.registrationStatus = STATUS_PENDING;
+        
+        // Add officer to project's assigned officers list
+        project.getAssignedOfficers().add(this);
+        
         return true;
     }
     
@@ -82,7 +86,9 @@ public class HDBOfficer extends User {
      */
     public boolean replyToEnquiry(Enquiry enquiry, String response) {
         // Can only reply to enquiries for the assigned project
-        if (assignedProject == null || enquiry.getProject().getProjectID() != assignedProject.getProjectID()) {
+        if (assignedProject == null || 
+            !STATUS_APPROVED.equals(registrationStatus) ||
+            !enquiry.getProject().getProjectName().equals(assignedProject.getProjectName())) {
             return false;
         }
         
@@ -92,25 +98,80 @@ public class HDBOfficer extends User {
     }
     
     /**
-     * Update the number of flats available for a flat type.
+     * Book a flat for an applicant.
      * 
-     * @param flatType The flat type to update
-     * @param newCount The new count of flats
-     * @return true if update is successful, false otherwise
+     * @param applicantID The ID of the applicant
+     * @param flatType The type of flat to book
+     * @return true if booking is successful, false otherwise
      */
-    public boolean updateFlatAvailability(String flatType, int newCount) {
-        // Can only update flat availability for the assigned project
+    public boolean bookFlat(String applicantID, String flatType) {
+        // Verify the officer is approved for a project
         if (assignedProject == null || !STATUS_APPROVED.equals(registrationStatus)) {
             return false;
         }
         
-        Map<String, Integer> flatTypes = assignedProject.getFlatTypes();
-        if (!flatTypes.containsKey(flatType)) {
+        // Find the application by applicant ID and project name
+        Application application = null;
+        
+        for (Application app : assignedProject.getApplications()) {
+            if (app.getApplicant().getUserID().equals(applicantID)) {
+                application = app;
+                break;
+            }
+        }
+        
+        if (application == null) {
             return false;
         }
         
-        flatTypes.put(flatType, newCount);
+        // Check if application status is successful
+        if (!Application.STATUS_SUCCESSFUL.equals(application.getStatus())) {
+            return false;
+        }
+        
+        // Check if the flat type is valid for the project
+        if (!assignedProject.hasFlatType(flatType) || assignedProject.getRemainingUnits(flatType) <= 0) {
+            return false;
+        }
+        
+        // Book the flat
+        application.setFlatTypeBooked(flatType);
+        
+        // Decrement available units
+        assignedProject.decrementUnits(flatType);
+        
+        // Update application status to booked
+        application.updateStatus(Application.STATUS_BOOKED);
+        
+        // Update applicant's booked flat information
+        Applicant applicant = (Applicant) application.getApplicant();
+        applicant.setBookedFlatType(flatType);
+        applicant.setBookedProject(assignedProject.getProjectName());
+        
         return true;
+    }
+    
+    /**
+     * Generate a receipt for a flat booking.
+     * 
+     * @param applicantID The ID of the applicant
+     * @return The receipt as a string, or null if generation fails
+     */
+    public String generateReceipt(String applicantID) {
+        // Verify the officer is approved for a project
+        if (assignedProject == null || !STATUS_APPROVED.equals(registrationStatus)) {
+            return null;
+        }
+        
+        Application application = retrieveApplication(applicantID);
+        
+        if (application == null || !Application.STATUS_BOOKED.equals(application.getStatus())) {
+            return null;
+        }
+        
+        // Create a receipt with the application and officer information
+        Receipt receipt = new Receipt(application, this);
+        return receipt.printReceipt();
     }
     
     /**
@@ -135,48 +196,27 @@ public class HDBOfficer extends User {
     }
     
     /**
-     * Update the status of an application.
+     * Override the applyForProject method from Applicant.
+     * HDB Officers cannot apply for projects they're handling.
      * 
-     * @param application The application to update
-     * @param newStatus The new status to set
-     * @return true if update is successful, false otherwise
+     * @param project The project to apply for
+     * @param flatType The type of flat to apply for
+     * @return true if application is successful, false otherwise
      */
-    public boolean updateApplicationStatus(Application application, String newStatus) {
-        // Can only update applications for the assigned project
-        if (assignedProject == null || !STATUS_APPROVED.equals(registrationStatus)) {
+    @Override
+    public boolean applyForProject(Project project, String flatType) {
+        // Can't apply for the project they're handling
+        if (assignedProject != null && 
+            assignedProject.getProjectName().equals(project.getProjectName())) {
             return false;
         }
         
-        if (application.getProject().getProjectID() != assignedProject.getProjectID()) {
-            return false;
-        }
-        
-        application.updateStatus(newStatus);
-        return true;
+        // Call the parent method to handle application
+        return super.applyForProject(project, flatType);
     }
     
     /**
-     * Generate a receipt for a flat booking.
-     * 
-     * @param application The application for which to generate a receipt
-     * @return The generated receipt, or null if generation fails
-     */
-    public Receipt generateReceipt(Application application) {
-        // Can only generate receipts for the assigned project and if application is booked
-        if (assignedProject == null || !STATUS_APPROVED.equals(registrationStatus)) {
-            return null;
-        }
-        
-        if (application.getProject().getProjectID() != assignedProject.getProjectID() ||
-            !Application.STATUS_BOOKED.equals(application.getStatus())) {
-            return null;
-        }
-        
-        return new Receipt(application, this);
-    }
-    
-    /**
-     * Implementation of viewProjects from User.
+     * Override viewProjects from Applicant.
      * Officers can see all projects but with more details.
      * 
      * @param filters Optional filters to apply
@@ -184,20 +224,14 @@ public class HDBOfficer extends User {
      */
     @Override
     public List<Project> viewProjects(Map<String, Object> filters) {
-        //List<Project> allProjects = DataManager.getInstance().getAllProjects();
-        List<Project> allProjects = dataManager.getAllProjects();
+        List<Project> projects = super.viewProjects(filters);
         
-        // Filter based on visibility, but always include assigned project
-        List<Project> visibleProjects = allProjects.stream()
-            .filter(p -> p.isVisible() || (assignedProject != null && p.getProjectID() == assignedProject.getProjectID()))
-            .collect(Collectors.toList());
-        
-        // Apply additional filters if provided
-        if (filters != null && !filters.isEmpty()) {
-            // Implementation of filters
+        // If assigned to a project, make sure it's in the list regardless of visibility
+        if (assignedProject != null && !projects.contains(assignedProject)) {
+            projects.add(assignedProject);
         }
         
-        return visibleProjects;
+        return projects;
     }
     
     // Getters and setters

@@ -9,7 +9,6 @@ import com.bto.model.Applicant;
 import com.bto.model.Application;
 import com.bto.model.DataManager;
 import com.bto.model.HDBManager;
-import com.bto.model.Project;
 import com.bto.model.Report;
 import com.bto.model.User;
 
@@ -28,10 +27,7 @@ public class ReportController {
     public ReportController(DataManager dataManager) {
         this.dataManager = dataManager;
     }
-    // public ReportController() {
-    //     this.dataManager = DataManager.getInstance();
-    // }
-    
+
     /**
      * Check if the user is authorized to generate reports.
      * Only HDB Managers can generate reports.
@@ -46,227 +42,247 @@ public class ReportController {
     /**
      * Generate a report of all applications with flat bookings.
      * 
-     * @param manager The HDB Manager generating the report
-     * @return The generated report object
+     * @param user The user generating the report (must be HDB Manager)
+     * @return The generated report object, or null if unauthorized
      */
-    public Report generateBookingReport(HDBManager manager) {
+    public Report generateBookingReport(User user) {
+        // Verify user is an HDB Manager
+        if (!(user instanceof HDBManager)) {
+            return null;
+        }
+        
+        HDBManager manager = (HDBManager) user;
         List<Application> allApplications = dataManager.getAllApplications();
         
         // Filter to only applications with status "Booked"
         List<Application> bookedApplications = allApplications.stream()
-                .filter(app -> "Booked".equalsIgnoreCase(app.getStatus()))
+                .filter(app -> Application.STATUS_BOOKED.equalsIgnoreCase(app.getStatus()))
                 .collect(Collectors.toList());
         
-        //Report report = new Report(manager, "All Booked Flats Report", bookedApplications);
         Report report = new Report(manager, "All Booked Flats Report", bookedApplications, dataManager);
         dataManager.saveReport(report);
         return report;
     }
-    
+
     /**
      * Generate a filtered report based on specific criteria.
      * 
-     * @param manager The HDB Manager generating the report
-     * @param projectName Filter by project name (null for all projects)
-     * @param flatType Filter by flat type (null for all types)
-     * @param maritalStatus Filter by marital status (null for both)
-     * @param minAge Minimum age filter (0 for no minimum)
-     * @param maxAge Maximum age filter (0 for no maximum)
-     * @return The generated report object
+     * @param user The user generating the report (must be HDB Manager)
+     * @param filters Map of filter criteria
+     * @return The generated report object, or null if unauthorized
      */
-    public Report generateFilteredReport(HDBManager manager, String projectName, 
-                                        String flatType, Boolean maritalStatus, 
-                                        int minAge, int maxAge) {
+    public Report generateFilteredReport(User user, Map<String, Object> filters) {
+        // Verify user is an HDB Manager
+        if (!(user instanceof HDBManager)) {
+            return null;
+        }
+        
+        HDBManager manager = (HDBManager) user;
         List<Application> allApplications = dataManager.getAllApplications();
         
-        // Only consider booked applications
+        // Start with booked applications
         List<Application> filteredApplications = allApplications.stream()
-                .filter(app -> "Booked".equalsIgnoreCase(app.getStatus()))
+                .filter(app -> Application.STATUS_BOOKED.equalsIgnoreCase(app.getStatus()))
                 .collect(Collectors.toList());
         
-        // Apply filters
-        if (projectName != null && !projectName.isEmpty()) {
-            filteredApplications = filteredApplications.stream()
-                    .filter(app -> app.getProject().getProjectName().equalsIgnoreCase(projectName))
-                    .collect(Collectors.toList());
+        // Apply filters if present
+        if (filters != null && !filters.isEmpty()) {
+            // Project Name Filter
+            if (filters.containsKey("projectName")) {
+                String projectName = (String) filters.get("projectName");
+                if (projectName != null && !projectName.trim().isEmpty()) {
+                    filteredApplications = filteredApplications.stream()
+                        .filter(app -> app.getProject() != null && 
+                                    projectName.trim().equalsIgnoreCase(app.getProject().getProjectName()))
+                        .collect(Collectors.toList());
+                }
+            }
+            
+            // Flat Type Filter
+            if (filters.containsKey("flatType")) {
+                String flatType = (String) filters.get("flatType");
+                if (flatType != null && !flatType.trim().isEmpty()) {
+                    filteredApplications = filteredApplications.stream()
+                        .filter(app -> flatType.trim().equalsIgnoreCase(app.getFlatTypeBooked()))
+                        .collect(Collectors.toList());
+                }
+            }
+            
+            // Marital Status Filter
+            if (filters.containsKey("maritalStatus")) {
+                String maritalStatus = (String) filters.get("maritalStatus");
+                if (maritalStatus != null && !maritalStatus.trim().isEmpty()) {
+                    filteredApplications = filteredApplications.stream()
+                        .filter(app -> {
+                            User applicant = app.getApplicant();
+                            return applicant instanceof Applicant && 
+                                maritalStatus.trim().equalsIgnoreCase(((Applicant)applicant).getMaritalStatus());
+                        })
+                        .collect(Collectors.toList());
+                }
+            }
+            
+            // Age Filters
+            if (filters.containsKey("minAge")) {
+                int minAge = getIntValue(filters.get("minAge"));
+                if (minAge > 0) {
+                    filteredApplications = filteredApplications.stream()
+                        .filter(app -> {
+                            User applicant = app.getApplicant();
+                            return applicant instanceof Applicant && 
+                                ((Applicant)applicant).getAge() >= minAge;
+                        })
+                        .collect(Collectors.toList());
+                }
+            }
+            
+            if (filters.containsKey("maxAge")) {
+                int maxAge = getIntValue(filters.get("maxAge"));
+                if (maxAge > 0) {
+                    filteredApplications = filteredApplications.stream()
+                        .filter(app -> {
+                            User applicant = app.getApplicant();
+                            return applicant instanceof Applicant && 
+                                ((Applicant)applicant).getAge() <= maxAge;
+                        })
+                        .collect(Collectors.toList());
+                }
+            }
         }
         
-        if (flatType != null && !flatType.isEmpty()) {
-            filteredApplications = filteredApplications.stream()
-                    .filter(app -> app.getFlatType().equalsIgnoreCase(flatType))
-                    .collect(Collectors.toList());
-        }
+        // Generate report title based on applied filters
+        String title = generateReportTitle(filters);
         
-        if (maritalStatus != null) {
-            filteredApplications = filteredApplications.stream()
-                    .filter(app -> {
-                        User user = app.getApplicant();
-                        if (user instanceof Applicant) {
-                            Applicant applicant = (Applicant) user;
-                            return applicant.isMarried() == maritalStatus;
-                        }
-                        return false;
-                    })
-                    .collect(Collectors.toList());
-        }
-        
-        if (minAge > 0) {
-            filteredApplications = filteredApplications.stream()
-                    .filter(app -> {
-                        User user = app.getApplicant();
-                        if (user instanceof Applicant) {
-                            Applicant applicant = (Applicant) user;
-                            return applicant.getAge() >= minAge;
-                        }
-                        return false;
-                    })
-                    .collect(Collectors.toList());
-        }
-        
-        if (maxAge > 0) {
-            filteredApplications = filteredApplications.stream()
-                    .filter(app -> {
-                        User user = app.getApplicant();
-                        if (user instanceof Applicant) {
-                            Applicant applicant = (Applicant) user;
-                            return applicant.getAge() <= maxAge;
-                        }
-                        return false;
-                    })
-                    .collect(Collectors.toList());
-        }
-        
-        // Build report title based on filters
-        StringBuilder titleBuilder = new StringBuilder("Filtered Report: ");
-        if (projectName != null && !projectName.isEmpty()) {
-            titleBuilder.append("Project: ").append(projectName).append(", ");
-        }
-        if (flatType != null && !flatType.isEmpty()) {
-            titleBuilder.append("Flat Type: ").append(flatType).append(", ");
-        }
-        if (maritalStatus != null) {
-            titleBuilder.append(maritalStatus ? "Married, " : "Single, ");
-        }
-        if (minAge > 0) {
-            titleBuilder.append("Min Age: ").append(minAge).append(", ");
-        }
-        if (maxAge > 0) {
-            titleBuilder.append("Max Age: ").append(maxAge).append(", ");
-        }
-        
-        // Remove trailing comma and space if present
-        String title = titleBuilder.toString();
-        if (title.endsWith(", ")) {
-            title = title.substring(0, title.length() - 2);
-        }
-        
-        //Report report = new Report(manager, title, filteredApplications);
+        // Create and save the report
         Report report = new Report(manager, title, filteredApplications, dataManager);
         dataManager.saveReport(report);
         return report;
     }
     
     /**
-     * Generate a summary report with statistics on flat type distribution by marital status.
+     * Get all reports for the manager.
      * 
-     * @param manager The HDB Manager generating the report
-     * @return The generated report with added statistics
+     * @param manager The HDB Manager
+     * @return List of reports for the manager
      */
-    public Report generateStatisticalReport(HDBManager manager) {
-        List<Application> bookedApplications = dataManager.getAllApplications().stream()
-                .filter(app -> "Booked".equalsIgnoreCase(app.getStatus()))
+    public List<Report> getManagerReports(HDBManager manager) {
+        return dataManager.getAllReports().stream()
+                .filter(r -> r.getManager() != null && 
+                         r.getManager().getUserID().equals(manager.getUserID()))
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * Create a filter map with provided criteria.
+     * Utility method to simplify filter creation from the view.
+     * 
+     * @param projectName Project name filter
+     * @param flatType Flat type filter
+     * @param maritalStatus Marital status filter
+     * @param minAge Minimum age filter
+     * @param maxAge Maximum age filter
+     * @return Map of filter criteria
+     */
+    public Map<String, Object> createFilterMap(
+            String projectName, String flatType, String maritalStatus, int minAge, int maxAge) {
+        Map<String, Object> filters = new HashMap<>();
         
-        // Count applications by flat type and marital status
-        Map<String, Integer> twoRoomMarried = new HashMap<>();
-        Map<String, Integer> twoRoomSingle = new HashMap<>();
-        Map<String, Integer> threeRoomMarried = new HashMap<>();
-        Map<String, Integer> threeRoomSingle = new HashMap<>();
+        if (projectName != null && !projectName.isEmpty()) {
+            filters.put("projectName", projectName);
+        }
         
-        for (Application app : bookedApplications) {
-            User user = app.getApplicant();
-            if (user instanceof Applicant) {
-                Applicant applicant = (Applicant) user;
-                boolean married = applicant.isMarried();
-                String flatType = app.getFlatType();
-                String projectName = app.getProject().getProjectName();
-                
-                if ("2-Room".equalsIgnoreCase(flatType)) {
-                    if (married) {
-                        twoRoomMarried.put(projectName, twoRoomMarried.getOrDefault(projectName, 0) + 1);
-                    } else {
-                        twoRoomSingle.put(projectName, twoRoomSingle.getOrDefault(projectName, 0) + 1);
-                    }
-                } else if ("3-Room".equalsIgnoreCase(flatType)) {
-                    if (married) {
-                        threeRoomMarried.put(projectName, threeRoomMarried.getOrDefault(projectName, 0) + 1);
-                    } else {
-                        threeRoomSingle.put(projectName, threeRoomSingle.getOrDefault(projectName, 0) + 1);
-                    }
+        if (flatType != null && !flatType.isEmpty()) {
+            filters.put("flatType", flatType);
+        }
+        
+        if (maritalStatus != null && !maritalStatus.isEmpty()) {
+            filters.put("maritalStatus", maritalStatus);
+        }
+        
+        if (minAge > 0) {
+            filters.put("minAge", minAge);
+        }
+        
+        if (maxAge > 0) {
+            filters.put("maxAge", maxAge);
+        }
+        
+        return filters;
+    }
+    
+    /**
+     * Helper method to safely convert an object to int.
+     * 
+     * @param obj The object to convert
+     * @return The int value, or 0 if conversion fails
+     */
+    private int getIntValue(Object obj) {
+        if (obj instanceof Integer) {
+            return (Integer) obj;
+        } else if (obj instanceof String) {
+            try {
+                return Integer.parseInt((String) obj);
+            } catch (NumberFormatException e) {
+                return 0;
+            }
+        }
+        return 0;
+    }
+    
+    /**
+     * Generate a report title based on applied filters.
+     * 
+     * @param filters The filters applied to the report
+     * @return A descriptive title for the report
+     */
+    private String generateReportTitle(Map<String, Object> filters) {
+        StringBuilder titleBuilder = new StringBuilder("Filtered Report: ");
+        boolean hasFilters = false;
+        
+        if (filters != null && !filters.isEmpty()) {
+            if (filters.containsKey("projectName")) {
+                String projectName = (String) filters.get("projectName");
+                if (projectName != null && !projectName.trim().isEmpty()) {
+                    titleBuilder.append("Project: ").append(projectName).append(", ");
+                    hasFilters = true;
+                }
+            }
+            
+            if (filters.containsKey("flatType")) {
+                String flatType = (String) filters.get("flatType");
+                if (flatType != null && !flatType.trim().isEmpty()) {
+                    titleBuilder.append("Flat Type: ").append(flatType).append(", ");
+                    hasFilters = true;
+                }
+            }
+            
+            if (filters.containsKey("maritalStatus")) {
+                String maritalStatus = (String) filters.get("maritalStatus");
+                if (maritalStatus != null && !maritalStatus.trim().isEmpty()) {
+                    titleBuilder.append("Marital Status: ").append(maritalStatus).append(", ");
+                    hasFilters = true;
+                }
+            }
+            
+            if (filters.containsKey("minAge")) {
+                int minAge = getIntValue(filters.get("minAge"));
+                if (minAge > 0) {
+                    titleBuilder.append("Min Age: ").append(minAge).append(", ");
+                    hasFilters = true;
+                }
+            }
+            
+            if (filters.containsKey("maxAge")) {
+                int maxAge = getIntValue(filters.get("maxAge"));
+                if (maxAge > 0) {
+                    titleBuilder.append("Max Age: ").append(maxAge).append(", ");
+                    hasFilters = true;
                 }
             }
         }
         
-        //Report report = new Report(manager, "Statistical Report: Flat Distribution by Marital Status", bookedApplications);
-        Report report = new Report(manager, "Statistical Report: Flat Distribution by Marital Status", bookedApplications, dataManager);
-        report.addStatistic("Married Applicants - 2-Room Flats", twoRoomMarried);
-        report.addStatistic("Single Applicants - 2-Room Flats", twoRoomSingle);
-        report.addStatistic("Married Applicants - 3-Room Flats", threeRoomMarried);
-        report.addStatistic("Single Applicants - 3-Room Flats", threeRoomSingle);
-        
-        dataManager.saveReport(report);
-        return report;
-    }
-    
-    /**
-     * Get all projects managed by a specific HDB Manager.
-     * 
-     * @param manager The HDB Manager
-     * @return A list of projects managed by the manager
-     */
-    public List<Project> getManagerProjects(HDBManager manager) {
-        List<Project> allProjects = dataManager.getAllProjects();
-        return allProjects.stream()
-                .filter(p -> p.getHdbManagerInCharge() != null && 
-                             p.getHdbManagerInCharge().getUserID().equals(manager.getUserID()))
-                .collect(Collectors.toList());
-    }
-    
-    /**
-     * Get all previously generated reports.
-     * 
-     * @return A list of all reports
-     */
-    public List<Report> getAllReports() {
-        return dataManager.getAllReports();
-    }
-    
-    /**
-     * Get reports generated by a specific HDB Manager.
-     * 
-     * @param manager The HDB Manager
-     * @return A list of reports generated by the manager
-     */
-    public List<Report> getManagerReports(HDBManager manager) {
-        List<Report> allReports = dataManager.getAllReports();
-        return allReports.stream()
-                .filter(r -> r.getManager().getUserID().equals(manager.getUserID()))
-                .collect(Collectors.toList());
-    }
-
-        /**
-     * Save a report to persistent storage.
-     * 
-     * @param report The report to save
-     * @return true if saved successfully, false otherwise
-     */
-    public boolean saveReport(Report report) {
-        try {
-            dataManager.saveReport(report);
-            return true;
-        } catch (Exception e) {
-            System.err.println("Error saving report: " + e.getMessage());
-            return false;
-        }
+        return hasFilters ? 
+            titleBuilder.substring(0, titleBuilder.length() - 2) : 
+            "Filtered Report: All Booked Applications";
     }
 }

@@ -1,12 +1,19 @@
 package com.bto.integration;
 
 import java.util.List;
-import com.bto.model.User;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import org.junit.Test;
+
 import com.bto.model.Applicant;
+import com.bto.model.Application;
 import com.bto.model.HDBManager;
 import com.bto.model.Project;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import com.bto.model.User;
 
 /**
  * Test cases for project visibility functionality
@@ -30,7 +37,7 @@ public class ProjectVisibilityTests extends BaseTest {
             assertTrue("Single applicant login should return an Applicant instance", singleApplicant instanceof Applicant);
             
             // Get visible projects for single applicant
-            List<Project> singleProjects = projectController.getVisibleProjects((Applicant)singleApplicant);
+            List<Project> singleProjects = projectController.getAvailableProjects((Applicant)singleApplicant);
             assertNotNull("Visible projects list should not be null", singleProjects);
             
             // Check if single applicant can see appropriate projects (2-Room only)
@@ -59,7 +66,7 @@ public class ProjectVisibilityTests extends BaseTest {
             assertTrue("Married applicant login should return an Applicant instance", marriedApplicant instanceof Applicant);
             
             // Get visible projects for married applicant
-            List<Project> marriedProjects = projectController.getVisibleProjects((Applicant)marriedApplicant);
+            List<Project> marriedProjects = projectController.getAvailableProjects((Applicant)marriedApplicant);
             assertNotNull("Visible projects list should not be null", marriedProjects);
             
             // Check if married applicant can see both flat types
@@ -92,7 +99,7 @@ public class ProjectVisibilityTests extends BaseTest {
             assertTrue("Should be able to toggle project visibility", toggleResult);
             
             // Check if project is now invisible to applicants
-            List<Project> projectsAfterToggle = projectController.getVisibleProjects((Applicant)singleApplicant);
+            List<Project> projectsAfterToggle = projectController.getAvailableProjects((Applicant)singleApplicant);
             boolean projectVisible = projectsAfterToggle.stream()
                 .anyMatch(p -> p.getProjectName().equals(projectName));
             
@@ -130,7 +137,7 @@ public class ProjectVisibilityTests extends BaseTest {
             assertTrue("Single applicant login should return an Applicant instance", singleApplicant instanceof Applicant);
             
             // Get project to apply for
-            List<Project> singleProjects = projectController.getVisibleProjects((Applicant)singleApplicant);
+            List<Project> singleProjects = projectController.getAvailableProjects((Applicant)singleApplicant);
             assertFalse("Should have visible projects to apply for", singleProjects.isEmpty());
             
             Project project = singleProjects.get(0);
@@ -225,7 +232,7 @@ public class ProjectVisibilityTests extends BaseTest {
             assertTrue("Applicant login should return an Applicant instance", applicant instanceof Applicant);
             
             // Get project to apply for
-            List<Project> projects = projectController.getVisibleProjects((Applicant)applicant);
+            List<Project> projects = projectController.getAvailableProjects((Applicant)applicant);
             assertFalse("Should have visible projects to apply for", projects.isEmpty());
             
             Project project = projects.get(0);
@@ -250,12 +257,12 @@ public class ProjectVisibilityTests extends BaseTest {
             assertTrue("Should be able to toggle project visibility", toggleResult);
             
             // Check if applicant can still view their application
-            var application = applicationController.getApplication((Applicant)applicant);
+            Application application = applicationController.getApplication((Applicant)applicant);
             
             assertNotNull("Application should still be accessible after visibility toggle", application);
-            assertEquals("Application should be for the correct project", projectName, application.getProjectName());
+            assertEquals("Application should be for the correct project", projectName, application.getProject().getProjectName());
             
-            if (application != null && application.getProjectName().equals(projectName)) {
+            if (application != null && application.getProject().getProjectName().equals(projectName)) {
                 printPass(testName, "Applicant can view application after visibility toggled off");
             } else {
                 printFail(testName, "Applicant cannot view application after visibility toggled off");

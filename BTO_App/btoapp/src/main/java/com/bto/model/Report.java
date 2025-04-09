@@ -113,13 +113,12 @@ public class Report {
         report.append("--------------------------------------------------------------------------------\n");
         
         for (Application app : reportApplications) {
-            report.append(String.format("%-10d | %-15s | %-15s | %-15s | %-10d | %-10s\n",
-                          app.getApplicationID(),
-                          app.getApplicant().getUserID(),
-                          app.getProject().getProjectName(),
-                          app.getStatus(),
-                          app.getApplicant().getAge(),
-                          app.getApplicant().getMaritalStatus()));
+            report.append(String.format("%-15s | %-15s | %-15s | %-10d | %-10s\n",
+               app.getApplicant().getUserID(),
+               app.getProject().getProjectName(),
+               app.getStatus(),
+               app.getApplicant().getAge(),
+               app.getApplicant().getMaritalStatus()));
         }
         
         report.append("=================================================\n");
@@ -145,10 +144,10 @@ public class Report {
         List<Application> filteredApplications = new ArrayList<>(allApplications);
         
         // Filter by project if specified
-        if (filters.containsKey("projectID")) {
-            int projectID = (int) filters.get("projectID");
+        if (filters.containsKey("projectName")) {
+            String projectName = (String) filters.get("projectName");
             filteredApplications = filteredApplications.stream()
-                .filter(app -> app.getProject().getProjectID() == projectID)
+                .filter(app -> app.getProject().getProjectName().equals(projectName))
                 .collect(Collectors.toList());
         }
         

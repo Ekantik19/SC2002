@@ -7,6 +7,7 @@ import com.bto.controller.ApplicationController;
 import com.bto.controller.AuthController;
 import com.bto.controller.EnquiryController;
 import com.bto.controller.ProjectController;
+import com.bto.controller.ReportController;
 import com.bto.model.DataManager;
 
 /**
@@ -19,6 +20,7 @@ public class BaseTest {
     protected ProjectController projectController;
     protected ApplicationController applicationController;
     protected EnquiryController enquiryController;
+    protected ReportController reportController;
     
     /**
      * Default constructor
@@ -36,14 +38,15 @@ public class BaseTest {
     public void setUp() {
         // Initialize with test data directory
         //dataManager = new DataManager("test/java/com/resources/");
-        dataManager = DataManager.createDataManager();
-        dataManager.setDataDirectory("main/java/com/resources/");
+        dataManager = new DataManager();
+        dataManager.setDataDirectory("test/java/com/resources/");
         
         // Initialize controllers
         authController = new AuthController(dataManager);
         projectController = new ProjectController(dataManager,authController);
-        applicationController = new ApplicationController(dataManager,authController);
+        applicationController = new ApplicationController(dataManager,authController,projectController);
         enquiryController = new EnquiryController(dataManager);
+        reportController=new ReportController(dataManager);
     }
     
     /**
@@ -81,12 +84,13 @@ public class BaseTest {
     protected void resetSystem() {
         // Close and reinitialize data manager and controllers
         //dataManager = new DataManager("test/dataList/");
-        dataManager = DataManager.createDataManager();
+        dataManager = new DataManager();
         dataManager.setDataDirectory("main/java/com/resources/");
 
         authController = new AuthController(dataManager);
         projectController = new ProjectController(dataManager,authController);
-        applicationController = new ApplicationController(dataManager,authController);
+        applicationController = new ApplicationController(dataManager,authController,projectController);
         enquiryController = new EnquiryController(dataManager);
+        reportController=new ReportController(dataManager);
     }
 }

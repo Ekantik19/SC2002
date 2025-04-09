@@ -1,9 +1,3 @@
-/**
- * The MainMenuView class handles the main menu interface in the BTO Management System.
- * This class extends ARenderView.
- * 
- * @version 1.0
- */
 package com.bto.view;
 
 import com.bto.controller.ApplicationController;
@@ -18,167 +12,223 @@ import com.bto.model.HDBOfficer;
 import com.bto.model.User;
 import com.bto.view.abstracts.ARenderView;
 
+/**
+ * MainMenuView serves as the central navigation hub for the BTO Management System.
+ * Manages user interactions, role-based access, and system navigation.
+ */
 public class MainMenuView extends ARenderView {
     private User currentUser;
     private AuthController authController;
     private DataManager dataManager;
     
     /**
-     * Constructs a new MainMenuView with the current user, auth controller, and data manager.
+     * Constructor for MainMenuView.
      * 
-     * @param user The current logged-in user
-     * @param authController The auth controller for handling logout
-     * @param dataManager The data manager for data persistence
+     * @param user Currently logged-in user
+     * @param authController Authentication controller
+     * @param dataManager Data management system
      */
     public MainMenuView(User user, AuthController authController, DataManager dataManager) {
-        super();
         this.currentUser = user;
         this.authController = authController;
         this.dataManager = dataManager;
     }
     
     /**
-     * Renders the main menu interface and directs to role-specific views.
+     * Primary navigation method for the main menu.
      * 
-     * @param selection The interface section to render
+     * @param selection Navigation selection
      */
     @Override
     public void renderApp(int selection) {
+        clearCLI();
+        
         switch (selection) {
             case 0:
-                // Main menu
-                renderChoice();
-                routeToRoleSpecificView();
+                displayMainMenu();
                 break;
-                
             case 1:
-                // Session options after returning from role views
-                renderChoice();
                 displaySessionOptions();
                 break;
-                
             default:
-                renderChoice();
                 System.out.println("Invalid selection. Returning to main menu.");
                 delay(1);
                 renderApp(0);
-                break;
         }
     }
     
     /**
-     * Routes to the appropriate view based on user role
+     * Renders the main menu based on user role.
      */
-    private void routeToRoleSpecificView() {
-        // Create controllers with the dataManager
-        ApplicationController applicationController = new ApplicationController(dataManager, authController);
-        ProjectController projectController = new ProjectController(dataManager, authController);
-        EnquiryController enquiryController = new EnquiryController(dataManager);
-        ReportController reportController = new ReportController(dataManager);
-
+    private void displayMainMenu() {
+        printBTOHeader("BTO Management System");
+        System.out.println("Welcome, " + getCurrentUserRole() + ": " + currentUser.getUserID());
+        
+        // Role-specific routing
         if (currentUser instanceof HDBManager) {
-            System.out.println("\nWelcome, HDB Manager " + currentUser.getName());
-            delay(1, "Loading Manager Interface...");
-            ManagerView managerView = new ManagerView(
-                (HDBManager) currentUser,
-                applicationController,
-                projectController,
-                enquiryController,
-                reportController
-            );
-            managerView.display();
-            renderApp(1); // Show session options after return
+            navigateToManagerView();
         } else if (currentUser instanceof HDBOfficer) {
-            System.out.println("\nWelcome, HDB Officer " + currentUser.getName());
-            delay(1, "Loading Officer Interface...");
-            OfficerView officerView = new OfficerView(
-                (HDBOfficer) currentUser,
-                applicationController,
-                projectController,
-                enquiryController
-            );
-            officerView.display();
-            renderApp(1); // Show session options after return
+            navigateToOfficerView();
         } else if (currentUser instanceof Applicant) {
-            System.out.println("\nWelcome, Applicant " + currentUser.getName());
-            delay(1, "Loading Applicant Interface...");
-            ApplicantView applicantView = new ApplicantView(
-                (Applicant) currentUser,
-                applicationController,
-                projectController
-            );
-            applicantView.display();
-            renderApp(1); // Show session options after return
+            navigateToApplicantView();
         } else {
-            System.out.println("Unknown user type. Returning to login...");
-            delay(2);
+            System.out.println("Unrecognized user type. Logging out.");
             logout();
         }
     }
     
     /**
-     * Displays options after returning from role-specific views
+     * Navigates to Manager-specific view.
+     */
+    private void navigateToManagerView() {
+        // Create necessary controllers
+        ProjectController projectController = new ProjectController(dataManager, authController);
+        ApplicationController applicationController = new ApplicationController(dataManager, authController, projectController);
+        EnquiryController enquiryController = new EnquiryController(dataManager);
+        ReportController reportController = new ReportController(dataManager);
+        
+        // Create and render manager view
+        ManagerView managerView = new ManagerView(
+            (HDBManager) currentUser, 
+            applicationController, 
+            projectController,
+            enquiryController, 
+            reportController
+        );
+        managerView.renderApp(0);
+        
+        // Return to session options
+        renderApp(1);
+    }
+    
+    /**
+     * Navigates to Officer-specific view.
+     */
+    private void navigateToOfficerView() {
+        // Create necessary controllers
+        ProjectController projectController = new ProjectController(dataManager, authController);
+        ApplicationController applicationController = new ApplicationController(dataManager, authController, projectController);
+        EnquiryController enquiryController = new EnquiryController(dataManager);
+        
+        // Create and render officer view
+        OfficerView officerView = new OfficerView(
+            (HDBOfficer) currentUser, 
+            applicationController, 
+            projectController,
+            enquiryController
+        );
+        officerView.renderApp(0);
+        
+        // Return to session options
+        renderApp(1);
+    }
+    
+    /**
+     * Navigates to Applicant-specific view.
+     */
+    private void navigateToApplicantView() {
+        // Create necessary controllers
+        ProjectController projectController = new ProjectController(dataManager, authController);
+        ApplicationController applicationController = new ApplicationController(dataManager, authController, projectController);
+        EnquiryController enquiryController = new EnquiryController(dataManager);
+        
+        // Create and render applicant view
+        ApplicantView applicantView = new ApplicantView(
+            (Applicant) currentUser, 
+            applicationController, 
+            projectController,
+            enquiryController
+        );
+        applicantView.renderApp(0);
+        
+        // Return to session options
+        renderApp(1);
+    }
+    
+    /**
+     * Displays session management options.
      */
     private void displaySessionOptions() {
         printSingleBorder("Session Options");
-        System.out.println("1. Return to Role Menu");
-        System.out.println("2. Logout");
-        System.out.println("3. Exit System");
+        System.out.println("1. Return to Main Menu");
+        System.out.println("2. Change Password");
+        System.out.println("3. Logout");
+        System.out.println("4. Exit System");
         
-        int choice = getInputInt("Enter choice: ", 3);
+        int choice = getInputInt("Select an option: ", 4);
         
         switch (choice) {
             case 1:
-                renderApp(0); // Return to role-specific view
+                renderApp(0);
                 break;
             case 2:
-                System.out.println("Logging out...");
-                delay(1);
-                logout();
+                changePassword();
                 break;
             case 3:
-                System.out.println("Exiting system. Goodbye!");
-                System.exit(0);
+                logout();
                 break;
-            default:
-                System.out.println("Invalid choice. Returning to session options...");
-                delay(1);
-                renderApp(1);
+            case 4:
+                exitSystem();
                 break;
         }
     }
     
     /**
-     * Logs out the current user and returns to the login screen
+     * Changes user password.
      */
-    private void logout() {
-        authController.logout();
+    private void changePassword() {
+        String oldPassword = getInputString("Enter current password: ");
+        String newPassword = getInputString("Enter new password: ");
+        
+        boolean passwordChanged = authController.changePassword(oldPassword, newPassword);
+        
+        if (passwordChanged) {
+            System.out.println("Password changed successfully.");
+        } else {
+            System.out.println("Password change failed. Please try again.");
+        }
+        
+        pressEnterToContinue();
+        renderApp(1);
     }
     
     /**
-     * Renders the title for the main menu view
+     * Logs out the current user.
+     */
+    private void logout() {
+        dataManager.saveData();
+        authController.logout();
+        System.out.println("Logged out successfully.");
+        // Typically would return to login screen, but that's outside this view's scope
+    }
+    
+    /**
+     * Exits the system.
+     */
+    private void exitSystem() {
+        System.out.println("Saving system data...");
+        dataManager.saveData();
+        System.out.println("Thank you for using the BTO Management System.");
+        System.exit(0);
+    }
+    
+    /**
+     * Gets a string representation of the current user's role.
+     * 
+     * @return User role as a string
+     */
+    private String getCurrentUserRole() {
+        if (currentUser instanceof HDBManager) return "HDB Manager";
+        if (currentUser instanceof HDBOfficer) return "HDB Officer";
+        if (currentUser instanceof Applicant) return "Applicant";
+        return "Unknown User";
+    }
+    
+    /**
+     * Renders the choice menu (required by abstract parent class).
      */
     @Override
     public void renderChoice() {
-        String userType = getUserTypeString();
-        String userName = currentUser.getName() != null ? currentUser.getName() : currentUser.getUserID();
-        printBTOHeader("Main Menu - " + userType + ": " + userName);
-    }
-    
-    /**
-     * Gets a string representation of the user's type
-     * 
-     * @return A string describing the user's role
-     */
-    private String getUserTypeString() {
-        if (currentUser instanceof HDBManager) {
-            return "HDB Manager";
-        } else if (currentUser instanceof HDBOfficer) {
-            return "HDB Officer";
-        } else if (currentUser instanceof Applicant) {
-            return "Applicant";
-        } else {
-            return "User";
-        }
+        displayMainMenu();
     }
 }
