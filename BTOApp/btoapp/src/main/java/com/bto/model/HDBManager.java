@@ -10,16 +10,15 @@ import com.bto.enquiry.EnquiryEditor;
 import com.bto.model.enums.ApplicationStatus;
 import com.bto.model.enums.FlatType;
 import com.bto.model.enums.UserRole;
-;
 
 /**
  * Class representing an HDB Manager in the BTO Management System.
- * Extends the HDBOfficer class, inheriting all officer capabilities.
+ * Extends the User class directly, representing a distinct role from HDBOfficer.
  * 
  * @author Your Name
  * @version 1.0
  */
-public class HDBManager extends HDBOfficer {
+public class HDBManager extends User {
     
     private List<Project> createdProjects;
     private List<Report> generatedReports;
@@ -37,7 +36,6 @@ public class HDBManager extends HDBOfficer {
         super(name, nric, age, maritalStatus, password);
         this.createdProjects = new ArrayList<>();
         this.generatedReports = new ArrayList<>();
-        // Override the role set in the parent constructor
         setRole(UserRole.MANAGER);
     }
     
@@ -125,8 +123,7 @@ public class HDBManager extends HDBOfficer {
         
         // Update officer slots if possible
         if (project.getAssignedOfficers().size() <= officerSlots) {
-            // In a real implementation, this would need to handle the case where
-            // the new officer slots is less than the current number of officers
+            project.setOfficerSlots(officerSlots);
         }
         
         return true;
@@ -356,7 +353,6 @@ public class HDBManager extends HDBOfficer {
      */
     @Override
     public String toString() {
-        String baseInfo = super.toString();
-        return baseInfo + ", Created Projects: " + createdProjects.size();
+        return super.toString() + ", Created Projects: " + createdProjects.size();
     }
 }

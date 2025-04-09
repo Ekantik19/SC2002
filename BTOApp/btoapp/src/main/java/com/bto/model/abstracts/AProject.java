@@ -152,6 +152,23 @@ public abstract class AProject {
         return false;
     }
     
+    /**
+     * Sets the number of officer slots for this project.
+     * 
+     * @param officerSlots The new number of officer slots
+     */
+    public void setOfficerSlots(int officerSlots) {
+        if (officerSlots >= 0 && officerSlots <= 10) { // Maximum 10 slots as per requirements
+            if (officerSlots >= assignedOfficers.size()) {
+                this.officerSlots = officerSlots;
+            } else {
+                System.out.println("Cannot set officer slots lower than current assigned officers count.");
+            }
+        } else {
+            System.out.println("Invalid number of officer slots. Must be between 0 and 10.");
+        }
+    }
+    
     // Getters and Setters
     
     public String getProjectName() {
