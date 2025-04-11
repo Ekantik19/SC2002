@@ -4,230 +4,165 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.bto.controller.abstracts.ABaseController;
-import com.bto.enquiry.Enquiry;
+import com.bto.controller.interfaces.IOfficerController;
+import com.bto.datamanager.ApplicationDataManager;
+import com.bto.datamanager.OfficerDataManager;
 import com.bto.model.Application;
 import com.bto.model.HDBOfficer;
 import com.bto.model.Project;
 import com.bto.model.Receipt;
+import com.bto.model.enums.ApplicationStatus;
 
 /**
- * Controller for HDB Officer operations in the BTO Management System.
- * 
- * @author Your Name
- * @version 1.0
+ * Controller for managing HDB Officer operations in the BTO system.
+ * Focuses on officer registrations, flat booking, and receipt generation.
  */
-public class OfficerController extends ABaseController {
+public class OfficerController extends ABaseController implements IOfficerController {
     
-    private ProjectController projectController;
-    private ApplicationController applicationController;
-    private EnquiryController enquiryController;
-    private ReportController reportController;
+    private OfficerDataManager officerDataManager;
+    private ApplicationDataManager applicationDataManager;
     
     /**
      * Constructor for OfficerController.
      * 
-     * @param projectController The project controller to use
-     * @param applicationController The application controller to use
-     * @param enquiryController The enquiry controller to use
-     * @param reportController The report controller to use
+     * @param officerDataManager The data manager for officer operations
+     * @param applicationDataManager The data manager for application operations
      */
-    public OfficerController(
-            ProjectController projectController,
-            ApplicationController applicationController,
-            EnquiryController enquiryController,
-            ReportController reportController) {
-        this.projectController = projectController;
-        this.applicationController = applicationController;
-        this.enquiryController = enquiryController;
-        this.reportController = reportController;
+    public OfficerController(OfficerDataManager officerDataManager, ApplicationDataManager applicationDataManager) {
+        this.officerDataManager = officerDataManager;
+        this.applicationDataManager = applicationDataManager;
     }
     
-    /**
-     * Registers an officer for a project.
-     * 
-     * @param projectId The ID of the project to register for
-     * @param officer The officer to register
-     * @return true if registration was successful, false otherwise
-     */
-    public boolean registerForProject(String projectId, HDBOfficer officer) {
+    @Override
+    public boolean registerForProject(HDBOfficer officer, Project project) {
+        // Validate input parameters
+        if (!validateNotNull(officer, "Officer") || !validateNotNull(project, "Project")) {
+            return false;
+        }
+        
+        // Check if officer is already registered for a project
+        if (officer.getAssignedProject() != null) {
+            System.out.println("Officer is already registered for a project.");
+            return false;
+        }
+        
+        // Check if officer is applying for this project as an Applicant
+        if (officer.getCurrentApplication() != null && 
+            officer.getCurrentApplication().getProject().getProjectName().equals(project.getProjectName())) {
+            System.out.println("Officer cannot register for a project they are applying to.");
+            return false;
+        }
+        
+        // Check if project has available officer slots
+        if (project.getRemainingOfficerSlots() <= 0) {
+            System.out.println("No available officer slots for this project.");
+            return false;
+        }
+        
+        // Register for project
+        boolean registered = officer.registerForProject(project);
+        
+        // Update officer in data manager
+        if (registered) {
+            officerDataManager.updateOfficer(officer);
+        }
+        
+        return registered;
+    }
+    
+    @Override
+    public boolean getRegistrationStatus(HDBOfficer officer) {
         // Validate input
-        if (!validateNotNullOrEmpty(projectId, "Project ID") || 
-            !validateNotNull(officer, "Officer")) {
+        if (!validateNotNull(officer, "Officer")) {
             return false;
         }
         
-        return projectController.registerOfficerForProject(projectId, officer);
+        return officer.isRegistrationApproved();
     }
     
-    /**
-     * Gets the project the officer is assigned to.
-     * 
-     * @param officer The officer to get the assigned project for
-     * @return The assigned project, or null if the officer is not assigned to any project
-     */
-    public Project getAssignedProject(HDBOfficer officer) {
-        if (!validateNotNull(officer, "Officer")) {
+    @Override
+    public boolean bookFlat(Application application, HDBOfficer officer) {
+        // Validate input parameters
+        if (!validateNotNull(application, "Application") || !validateNotNull(officer, "Officer")) {
+            return false;
+        }
+        
+        // Check if officer is assigned to the project
+        if (!officer.isAssignedToProject(application.getProject())) {
+            System.out.println("Officer is not assigned to this project.");
+            return false;
+        }
+        
+        // Check if application is in SUCCESSFUL status
+        if (application.getStatus() != ApplicationStatus.SUCCESSFUL) {
+            System.out.println("Application is not in SUCCESSFUL status. Cannot book flat.");
+            return false;
+        }
+        
+        // Book flat
+        boolean booked = officer.bookFlat(application);
+        
+        // Update application in data manager if booking was successful
+        if (booked) {
+            applicationDataManager.updateApplication(application);
+        }
+        
+        return booked;
+    }
+    
+    @Override
+    public Receipt generateBookingReceipt(Application application, HDBOfficer officer) {
+        // Validate input parameters
+        if (!validateNotNull(application, "Application") || !validateNotNull(officer, "Officer")) {
             return null;
         }
         
-        return officer.getAssignedProject();
-    }
-    
-    /**
-     * Checks if the officer is assigned to a specific project.
-     * 
-     * @param projectId The ID of the project to check
-     * @param officer The officer to check
-     * @return true if the officer is assigned to the project, false otherwise
-     */
-    public boolean isAssignedToProject(String projectId, HDBOfficer officer) {
-        if (!validateNotNullOrEmpty(projectId, "Project ID") || 
-            !validateNotNull(officer, "Officer")) {
-            return false;
-        }
-        
-        Project project = projectController.getProjectById(projectId);
-        if (project == null) {
-            return false;
-        }
-        
-        return officer.isAssignedToProject(project);
-    }
-    
-    /**
-     * Books a flat for an approved application.
-     * 
-     * @param applicationId The ID of the application to book a flat for
-     * @param officer The officer booking the flat
-     * @return true if the booking was successful, false otherwise
-     */
-    public boolean bookFlat(String applicationId, HDBOfficer officer) {
-        if (!validateNotNullOrEmpty(applicationId, "Application ID") || 
-            !validateNotNull(officer, "Officer")) {
-            return false;
-        }
-        
-        return applicationController.bookFlat(applicationId, officer);
-    }
-    
-    /**
-     * Generates a receipt for a flat booking.
-     * 
-     * @param applicationId The ID of the application to generate a receipt for
-     * @param officer The officer generating the receipt
-     * @return The generated receipt if successful, null otherwise
-     */
-    public Receipt generateBookingReceipt(String applicationId, HDBOfficer officer) {
-        if (!validateNotNullOrEmpty(applicationId, "Application ID") || 
-            !validateNotNull(officer, "Officer")) {
+        // Check if officer is assigned to the project
+        if (!officer.isAssignedToProject(application.getProject())) {
+            System.out.println("Officer is not assigned to this project.");
             return null;
         }
         
-        return reportController.generateBookingReceipt(applicationId, officer);
-    }
-    
-    /**
-     * Gets applications for the officer's assigned project.
-     * 
-     * @param officer The officer to get applications for
-     * @return A list of applications for the officer's assigned project
-     */
-    public List<Application> getProjectApplications(HDBOfficer officer) {
-        if (!validateNotNull(officer, "Officer")) {
-            return new ArrayList<>();
-        }
-        
-        Project assignedProject = officer.getAssignedProject();
-        if (assignedProject == null) {
-            return new ArrayList<>();
-        }
-        
-        return applicationController.getApplicationsByProject(assignedProject);
-    }
-    
-    /**
-     * Gets enquiries for the officer's assigned project.
-     * 
-     * @param officer The officer to get enquiries for
-     * @return A list of enquiries for the officer's assigned project
-     */
-    public List<Enquiry> getProjectEnquiries(HDBOfficer officer) {
-        if (!validateNotNull(officer, "Officer")) {
-            return new ArrayList<>();
-        }
-        
-        Project assignedProject = officer.getAssignedProject();
-        if (assignedProject == null) {
-            return new ArrayList<>();
-        }
-        
-        return enquiryController.getEnquiriesForOfficer(assignedProject.getProjectName(), officer);
-    }
-    
-    /**
-     * Gets unanswered enquiries for the officer's assigned project.
-     * 
-     * @param officer The officer to get unanswered enquiries for
-     * @return A list of unanswered enquiries for the officer's assigned project
-     */
-    public List<Enquiry> getUnansweredEnquiries(HDBOfficer officer) {
-        if (!validateNotNull(officer, "Officer")) {
-            return new ArrayList<>();
-        }
-        
-        Project assignedProject = officer.getAssignedProject();
-        if (assignedProject == null) {
-            return new ArrayList<>();
-        }
-        
-        return enquiryController.getUnansweredEnquiries(assignedProject.getProjectName());
-    }
-    
-    /**
-     * Replies to an enquiry as an officer.
-     * 
-     * @param enquiryId The ID of the enquiry to reply to
-     * @param replyText The text of the reply
-     * @param officer The officer replying to the enquiry
-     * @return true if the reply was successful, false otherwise
-     */
-    public boolean replyToEnquiry(String enquiryId, String replyText, HDBOfficer officer) {
-        if (!validateNotNullOrEmpty(enquiryId, "Enquiry ID") || 
-            !validateNotNullOrEmpty(replyText, "Reply Text") || 
-            !validateNotNull(officer, "Officer")) {
-            return false;
-        }
-        
-        return enquiryController.replyToEnquiryAsOfficer(enquiryId, replyText, officer);
-    }
-    
-    /**
-     * Gets an application by its ID.
-     * 
-     * @param applicationId The ID of the application to retrieve
-     * @return The requested application if found, null otherwise
-     */
-    public Application getApplicationById(String applicationId) {
-        if (!validateNotNullOrEmpty(applicationId, "Application ID")) {
+        // Check if application is in BOOKED status
+        if (application.getStatus() != ApplicationStatus.BOOKED) {
+            System.out.println("Application is not in BOOKED status. Cannot generate receipt.");
             return null;
         }
         
-        return applicationController.viewApplication(applicationId);
+        return officer.generateBookingReceipt(application);
     }
     
-    /**
-     * Gets an application by applicant's NRIC.
-     * 
-     * @param applicantNric The NRIC of the applicant
-     * @param officer The officer retrieving the application
-     * @return The application if found, null otherwise
-     */
-    public Application getApplicationByApplicantNric(String applicantNric, HDBOfficer officer) {
-        if (!validateNotNullOrEmpty(applicantNric, "Applicant NRIC") || 
-            !validateNotNull(officer, "Officer")) {
+    @Override
+    public Application retrieveApplicationByNric(String applicantNric, HDBOfficer officer) {
+        // Validate input parameters
+        if (!validateNotNullOrEmpty(applicantNric, "Applicant NRIC") || !validateNotNull(officer, "Officer")) {
             return null;
         }
         
+        // Check if officer is assigned to a project
+        if (!officer.isProjectAssigned()) {
+            System.out.println("Officer is not assigned to any project.");
+            return null;
+        }
+        
+        // Retrieve application
         return officer.retrieveApplicationByNric(applicantNric);
+    }
+    
+    @Override
+    public List<Project> getAssignedProjects(HDBOfficer officer) {
+        // Validate input
+        if (!validateNotNull(officer, "Officer")) {
+            return new ArrayList<>();
+        }
+        
+        List<Project> assignedProjects = new ArrayList<>();
+        
+        // Add the assigned project if any
+        if (officer.isProjectAssigned() && officer.getAssignedProject() != null) {
+            assignedProjects.add(officer.getAssignedProject());
+        }
+        
+        return assignedProjects;
     }
 }

@@ -83,24 +83,6 @@ public interface IProjectController {
     boolean registerOfficerForProject(String projectId, HDBOfficer officer);
     
     /**
-     * Approves an officer's registration.
-     * 
-     * @param officerNric The NRIC of the officer to approve
-     * @param manager The manager approving the registration
-     * @return true if the approval was successful, false otherwise
-     */
-    boolean approveOfficerRegistration(String officerNric, HDBManager manager);
-    
-    /**
-     * Rejects an officer's registration.
-     * 
-     * @param officerNric The NRIC of the officer to reject
-     * @param manager The manager rejecting the registration
-     * @return true if the rejection was successful, false otherwise
-     */
-    boolean rejectOfficerRegistration(String officerNric, HDBManager manager);
-    
-    /**
      * Gets a project by its ID.
      * 
      * @param projectId The ID of the project to retrieve
@@ -146,4 +128,20 @@ public interface IProjectController {
      * @return A list of projects visible to the applicant
      */
     List<Project> getVisibleProjectsForApplicant(Applicant applicant);
+    
+    /**
+     * Gets all approved officers for a project.
+     * 
+     * @param projectId The ID of the project
+     * @return A list of approved officers for the project
+     */
+    List<HDBOfficer> getApprovedOfficersForProject(String projectId);
+    
+    /**
+     * Gets the count of remaining officer slots for a project.
+     * 
+     * @param projectId The ID of the project
+     * @return The number of remaining officer slots
+     */
+    int getRemainingOfficerSlots(String projectId);
 }

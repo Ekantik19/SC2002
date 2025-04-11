@@ -1,274 +1,352 @@
 package com.bto.controller;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.bto.controller.abstracts.ABaseController;
 import com.bto.controller.interfaces.IApplicationController;
+import com.bto.datamanager.ApplicantDataManager;
+import com.bto.datamanager.ApplicationDataManager;
 import com.bto.model.Applicant;
 import com.bto.model.Application;
 import com.bto.model.HDBManager;
-import com.bto.model.HDBOfficer;
 import com.bto.model.Project;
 import com.bto.model.enums.ApplicationStatus;
 import com.bto.model.enums.FlatType;
 import com.bto.service.EligibilityCheckerService;
 
 /**
- * Controller for managing applications in the BTO Management System.
- * 
- * @author Your Name
- * @version 1.0
+ * Controller for managing BTO applications in the system.
+ * Implements IApplicationController and extends ABaseController.
  */
 public class ApplicationController extends ABaseController implements IApplicationController {
     
-    private Map<String, Application> applicationMap;
+    private ApplicationDataManager applicationDataManager;
+    private ApplicantDataManager applicantDataManager;
     private EligibilityCheckerService eligibilityService;
     
     /**
      * Constructor for ApplicationController.
+     * 
+     * @param applicationDataManager The data manager for application operations
+     * @param applicantDataManager The data manager for applicant operations
+     * @param eligibilityService The service for checking applicant eligibility
      */
-    public ApplicationController() {
-        this.applicationMap = new HashMap<>();
-        this.eligibilityService = new EligibilityCheckerService();
+    public ApplicationController(
+            ApplicationDataManager applicationDataManager, 
+            ApplicantDataManager applicantDataManager,
+            EligibilityCheckerService eligibilityService) {
+        this.applicationDataManager = applicationDataManager;
+        this.applicantDataManager = applicantDataManager;
+        this.eligibilityService = eligibilityService;
+    }
+    
+    @Override
+    public Application submitApplication(Applicant applicant, Project project, FlatType flatType) {
+        // Validate input parameters
+        if (!validateInputForSubmission(applicant, project, flatType)) {
+            return null;
+        }
+        
+        // Create new application
+        Application application = new Application(null, applicant, project, flatType);
+        
+        // Add to data manager
+        if (applicationDataManager.addApplication(application)) {
+            // Update applicant's current application
+            applicant.setCurrentApplication(application);
+            applicantDataManager.updateApplicant(applicant);
+            
+            // Add application to project
+            project.addApplication(application);
+            
+            return application;
+        }
+        
+        return null;
+    }
+    
+    @Override
+    public Application viewApplication(String applicationId) {
+        // Validate input
+        if (!validateNotNullOrEmpty(applicationId, "Application ID")) {
+            return null;
+        }
+        
+        return applicationDataManager.getApplicationById(applicationId);
+    }
+    
+    @Override
+    public boolean requestWithdrawal(String applicationId, Applicant applicant) {
+        // Get the application and validate ownership
+        Application application = getAndValidateApplicationOwnership(applicationId, applicant);
+        if (application == null) {
+            return false;
+        }
+        
+        // Request withdrawal
+        boolean requested = application.requestWithdrawal();
+        
+        // Update application in data manager if withdrawal was requested
+        if (requested) {
+            applicationDataManager.updateApplication(application);
+        }
+        
+        return requested;
+    }
+    
+    @Override
+    public List<Application> getApplicationsByProject(Project project) {
+        // Validate input
+        if (!validateNotNull(project, "Project")) {
+            return new ArrayList<>();
+        }
+        
+        return applicationDataManager.getApplicationsByProject(project.getProjectName());
+    }
+    
+    @Override
+    public List<Application> getApplicationsByApplicant(Applicant applicant) {
+        // Validate input
+        if (!validateNotNull(applicant, "Applicant")) {
+            return new ArrayList<>();
+        }
+        
+        return applicationDataManager.getApplicationsByApplicant(applicant.getNric());
+    }
+    
+    @Override
+    public List<Application> getApplicationsByStatus(Project project, ApplicationStatus status) {
+        // Validate input
+        if (!validateNotNull(project, "Project") || !validateNotNull(status, "Status")) {
+            return new ArrayList<>();
+        }
+        
+        // Get all applications for the project
+        List<Application> projectApplications = getApplicationsByProject(project);
+        
+        // Filter by status
+        return projectApplications.stream()
+                .filter(app -> app.getStatus() == status)
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    public boolean approveApplication(String applicationId, HDBManager manager) {
+        // Get the application and validate manager authorization
+        Application application = getAndValidateManagerAuthorization(applicationId, manager);
+        if (application == null) {
+            return false;
+        }
+        
+        // Check if there are available units for the selected flat type
+        if (!application.getProject().hasAvailableUnits(application.getSelectedFlatType())) {
+            System.out.println("No available units for the selected flat type.");
+            return false;
+        }
+        
+        // Approve the application
+        boolean approved = application.approve();
+        
+        // Update application in data manager if approval was successful
+        if (approved) {
+            applicationDataManager.updateApplication(application);
+        }
+        
+        return approved;
+    }
+    
+    @Override
+    public boolean rejectApplication(String applicationId, HDBManager manager) {
+        // Get the application and validate manager authorization
+        Application application = getAndValidateManagerAuthorization(applicationId, manager);
+        if (application == null) {
+            return false;
+        }
+        
+        // Reject the application
+        boolean rejected = application.reject();
+        
+        // Update application in data manager if rejection was successful
+        if (rejected) {
+            // Clear the current application reference from the applicant
+            clearCurrentApplicationReference(application);
+            applicationDataManager.updateApplication(application);
+        }
+        
+        return rejected;
+    }
+    
+    @Override
+    public boolean approveWithdrawal(String applicationId, HDBManager manager) {
+        // Get the application and validate manager authorization
+        Application application = getAndValidateManagerAuthorization(applicationId, manager);
+        if (application == null) {
+            return false;
+        }
+        
+        // Check if withdrawal was requested
+        if (!application.isWithdrawalRequested()) {
+            System.out.println("No withdrawal request for this application.");
+            return false;
+        }
+        
+        // Approve the withdrawal
+        boolean approved = application.approveWithdrawal();
+        
+        // Update application in data manager if approval was successful
+        if (approved) {
+            // Clear the current application reference from the applicant
+            clearCurrentApplicationReference(application);
+            applicationDataManager.updateApplication(application);
+        }
+        
+        return approved;
+    }
+    
+    @Override
+    public boolean rejectWithdrawal(String applicationId, HDBManager manager) {
+        // Get the application and validate manager authorization
+        Application application = getAndValidateManagerAuthorization(applicationId, manager);
+        if (application == null) {
+            return false;
+        }
+        
+        // Check if withdrawal was requested
+        if (!application.isWithdrawalRequested()) {
+            System.out.println("No withdrawal request for this application.");
+            return false;
+        }
+        
+        // Reject the withdrawal
+        boolean rejected = application.rejectWithdrawal();
+        
+        // Update application in data manager if rejection was successful
+        if (rejected) {
+            applicationDataManager.updateApplication(application);
+        }
+        
+        return rejected;
     }
     
     /**
-     * {@inheritDoc}
+     * Validates input parameters for application submission.
+     * 
+     * @param applicant The applicant submitting the application
+     * @param project The project being applied for
+     * @param flatType The type of flat selected
+     * @return true if inputs are valid, false otherwise
      */
-    @Override
-    public Application submitApplication(Applicant applicant, Project project, FlatType flatType) {
-        // Validate input
+    private boolean validateInputForSubmission(Applicant applicant, Project project, FlatType flatType) {
+        // Validate input parameters
         if (!validateNotNull(applicant, "Applicant") || 
-            !validateNotNull(project, "Project") || 
+            !validateNotNull(project, "Project") ||
             !validateNotNull(flatType, "Flat Type")) {
-            return null;
+            return false;
+        }
+        
+        // Check if the applicant already has an active application
+        if (applicant.hasActiveApplication()) {
+            System.out.println("Applicant already has an active application.");
+            return false;
         }
         
         // Check if project is open for applications
         if (!project.isOpenForApplications()) {
-            System.out.println("Project is not open for applications");
-            return null;
+            System.out.println("Project is not currently open for applications.");
+            return false;
         }
         
-        // Check if applicant already has an active application
-        if (applicant.hasActiveApplication()) {
-            System.out.println("Applicant already has an active application");
-            return null;
-        }
-        
-        // Check eligibility
+        // Check applicant eligibility for the flat type
         if (!eligibilityService.isEligibleForFlatType(applicant, flatType)) {
-            System.out.println("Applicant is not eligible for the selected flat type");
+            System.out.println("Applicant is not eligible for the selected flat type.");
+            return false;
+        }
+        
+        // Check if the project offers the selected flat type
+        boolean flatTypeAvailable = project.getFlatTypeInfoList().stream()
+                .anyMatch(info -> info.getFlatType() == flatType);
+        
+        if (!flatTypeAvailable) {
+            System.out.println("Selected flat type is not available in this project.");
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Gets an application and validates that it belongs to the specified applicant.
+     * 
+     * @param applicationId The ID of the application
+     * @param applicant The applicant claiming ownership
+     * @return The application if found and valid, null otherwise
+     */
+    private Application getAndValidateApplicationOwnership(String applicationId, Applicant applicant) {
+        // Validate input
+        if (!validateNotNullOrEmpty(applicationId, "Application ID") || 
+            !validateNotNull(applicant, "Applicant")) {
             return null;
         }
         
-        // Generate application ID
-        String applicationId = generateApplicationId(applicant.getNric(), project.getProjectName());
+        // Get the application
+        Application application = applicationDataManager.getApplicationById(applicationId);
+        if (application == null) {
+            System.out.println("Application not found.");
+            return null;
+        }
         
-        // Create application
-        Application application = new Application(applicationId, applicant, project, flatType);
-        
-        // Add to maps
-        applicationMap.put(applicationId, application);
-        project.addApplication(application);
-        applicant.setCurrentApplication(application);
+        // Check if the application belongs to the applicant
+        if (!application.getApplicant().getNric().equals(applicant.getNric())) {
+            System.out.println("Application does not belong to this applicant.");
+            return null;
+        }
         
         return application;
     }
     
     /**
-     * Helper method to generate an application ID.
+     * Gets an application and validates that the specified manager is authorized to modify it.
      * 
-     * @param nric The NRIC of the applicant
-     * @param projectName The name of the project
-     * @return A unique application ID
+     * @param applicationId The ID of the application
+     * @param manager The manager claiming authorization
+     * @return The application if found and valid, null otherwise
      */
-    private String generateApplicationId(String nric, String projectName) {
-        // Simple ID generation - in a real system, this would be more sophisticated
-        return "APP-" + nric.substring(1, 8) + "-" + 
-               projectName.substring(0, Math.min(3, projectName.length())).toUpperCase();
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Application viewApplication(String applicationId) {
-        if (!validateNotNullOrEmpty(applicationId, "Application ID")) {
+    private Application getAndValidateManagerAuthorization(String applicationId, HDBManager manager) {
+        // Validate input
+        if (!validateNotNullOrEmpty(applicationId, "Application ID") || 
+            !validateNotNull(manager, "Manager")) {
             return null;
         }
         
-        return applicationMap.get(applicationId);
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean requestWithdrawal(String applicationId, Applicant applicant) {
-        if (!validateNotNullOrEmpty(applicationId, "Application ID") || 
-            !validateNotNull(applicant, "Applicant")) {
-            return false;
-        }
-        
-        Application application = applicationMap.get(applicationId);
+        // Get the application
+        Application application = applicationDataManager.getApplicationById(applicationId);
         if (application == null) {
-            System.out.println("Application not found");
-            return false;
+            System.out.println("Application not found.");
+            return null;
         }
         
-        // Check if this is the applicant's application
-        if (!application.getApplicant().getNric().equals(applicant.getNric())) {
-            System.out.println("Unauthorized to request withdrawal for this application");
-            return false;
+        // Check if the manager is in charge of the project
+        if (!application.getProject().getManagerInCharge().getNric().equals(manager.getNric())) {
+            System.out.println("Manager is not in charge of this project.");
+            return null;
         }
         
-        return application.requestWithdrawal();
+        return application;
     }
     
     /**
-     * {@inheritDoc}
+     * Clears the current application reference from an applicant.
+     * 
+     * @param application The application to clear from the applicant
      */
-    @Override
-    public List<Application> getApplicationsByProject(Project project) {
-        if (!validateNotNull(project, "Project")) {
-            return new ArrayList<>();
+    private void clearCurrentApplicationReference(Application application) {
+        Applicant applicant = application.getApplicant();
+        if (applicant.getCurrentApplication() != null && 
+            applicant.getCurrentApplication().getApplicationId().equals(application.getApplicationId())) {
+            applicant.setCurrentApplication(null);
+            applicantDataManager.updateApplicant(applicant);
         }
-        
-        return project.getApplications();
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<Application> getApplicationsByApplicant(Applicant applicant) {
-        if (!validateNotNull(applicant, "Applicant")) {
-            return new ArrayList<>();
-        }
-        
-        List<Application> applications = new ArrayList<>();
-        if (applicant.getCurrentApplication() != null) {
-            applications.add(applicant.getCurrentApplication());
-        }
-        
-        return applications;
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<Application> getApplicationsByStatus(Project project, ApplicationStatus status) {
-        if (!validateNotNull(project, "Project") || !validateNotNull(status, "Status")) {
-            return new ArrayList<>();
-        }
-        
-        List<Application> filteredApplications = new ArrayList<>();
-        for (Application application : project.getApplications()) {
-            if (application.getStatus() == status) {
-                filteredApplications.add(application);
-            }
-        }
-        
-        return filteredApplications;
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean approveApplication(String applicationId, HDBManager manager) {
-        if (!validateNotNullOrEmpty(applicationId, "Application ID") || 
-            !validateNotNull(manager, "Manager")) {
-            return false;
-        }
-        
-        Application application = applicationMap.get(applicationId);
-        if (application == null) {
-            System.out.println("Application not found");
-            return false;
-        }
-        
-        return manager.approveApplication(application);
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean rejectApplication(String applicationId, HDBManager manager) {
-        if (!validateNotNullOrEmpty(applicationId, "Application ID") || 
-            !validateNotNull(manager, "Manager")) {
-            return false;
-        }
-        
-        Application application = applicationMap.get(applicationId);
-        if (application == null) {
-            System.out.println("Application not found");
-            return false;
-        }
-        
-        return manager.rejectApplication(application);
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean bookFlat(String applicationId, HDBOfficer officer) {
-        if (!validateNotNullOrEmpty(applicationId, "Application ID") || 
-            !validateNotNull(officer, "Officer")) {
-            return false;
-        }
-        
-        Application application = applicationMap.get(applicationId);
-        if (application == null) {
-            System.out.println("Application not found");
-            return false;
-        }
-        
-        return officer.bookFlat(application);
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean approveWithdrawal(String applicationId, HDBManager manager) {
-        if (!validateNotNullOrEmpty(applicationId, "Application ID") || 
-            !validateNotNull(manager, "Manager")) {
-            return false;
-        }
-        
-        Application application = applicationMap.get(applicationId);
-        if (application == null) {
-            System.out.println("Application not found");
-            return false;
-        }
-        
-        return manager.approveWithdrawal(application);
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean rejectWithdrawal(String applicationId, HDBManager manager) {
-        if (!validateNotNullOrEmpty(applicationId, "Application ID") || 
-            !validateNotNull(manager, "Manager")) {
-            return false;
-        }
-        
-        Application application = applicationMap.get(applicationId);
-        if (application == null) {
-            System.out.println("Application not found");
-            return false;
-        }
-        
-        return manager.rejectWithdrawal(application);
     }
 }

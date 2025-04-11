@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import com.bto.controller.abstracts.ABaseController;
 import com.bto.controller.interfaces.IEnquiryController;
+import com.bto.datamanager.EnquiryDataManager;
 import com.bto.enquiry.Enquiry;
 import com.bto.enquiry.EnquiryEditor;
 import com.bto.model.Applicant;
@@ -26,16 +27,41 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
     private Map<String, Enquiry> enquiryMap;
     private Map<String, EnquiryEditor> editorMap;
     private ProjectController projectController;
+    private EnquiryDataManager enquiryDataManager;
     
     /**
      * Constructor for EnquiryController.
      * 
      * @param projectController The project controller to use
+     * @param enquiryDataManager The enquiry data manager to use
      */
-    public EnquiryController(ProjectController projectController) {
+    public EnquiryController(ProjectController projectController, EnquiryDataManager enquiryDataManager) {
         this.enquiryMap = new HashMap<>();
         this.editorMap = new HashMap<>();
         this.projectController = projectController;
+        this.enquiryDataManager = enquiryDataManager;
+        
+        // Load enquiries from data manager
+        loadEnquiries();
+    }
+    
+    /**
+     * Loads enquiries from the data manager.
+     */
+    private void loadEnquiries() {
+        List<Enquiry> enquiries = enquiryDataManager.loadEnquiries();
+        for (Enquiry enquiry : enquiries) {
+            enquiryMap.put(enquiry.getEnquiryId(), enquiry);
+            
+            // Add to project's enquiries if not already there
+            Project project = enquiry.getProject();
+            if (project != null) {
+                project.addEnquiry(enquiry);
+                
+                // Ensure we have an editor for this project
+                getOrCreateEditor(project);
+            }
+        }
     }
     
     /**
@@ -65,6 +91,9 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         if (enquiry != null) {
             // Add to map
             enquiryMap.put(enquiry.getEnquiryId(), enquiry);
+            
+            // Save to data manager
+            enquiryDataManager.addEnquiry(enquiry);
         }
         
         return enquiry;
@@ -117,7 +146,14 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         EnquiryEditor editor = getOrCreateEditor(enquiry.getProject());
         
         // Update enquiry
-        return editor.edit(enquiry, newEnquiryText);
+        boolean updated = editor.edit(enquiry, newEnquiryText);
+        
+        if (updated) {
+            // Update in data manager
+            enquiryDataManager.updateEnquiry(enquiry);
+        }
+        
+        return updated;
     }
     
     /**
@@ -148,12 +184,17 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         EnquiryEditor editor = getOrCreateEditor(enquiry.getProject());
         
         // Delete enquiry
-        editor.delete(enquiry);
+        boolean deleted = editor.delete(enquiry);
         
-        // Remove from map
-        enquiryMap.remove(enquiryId);
+        if (deleted) {
+            // Remove from map
+            enquiryMap.remove(enquiryId);
+            
+            // Remove from data manager
+            enquiryDataManager.deleteEnquiry(enquiryId);
+        }
         
-        return true;
+        return deleted;
     }
     
     /**
@@ -179,7 +220,14 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         EnquiryEditor editor = getOrCreateEditor(enquiry.getProject());
         
         // Reply to enquiry
-        return officer.replyToEnquiry(enquiry, replyText, editor);
+        boolean replied = officer.replyToEnquiry(enquiry, replyText, editor);
+        
+        if (replied) {
+            // Update in data manager
+            enquiryDataManager.updateEnquiry(enquiry);
+        }
+        
+        return replied;
     }
     
     /**
@@ -205,7 +253,14 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         EnquiryEditor editor = getOrCreateEditor(enquiry.getProject());
         
         // Reply to enquiry
-        return manager.replyToEnquiry(enquiry, replyText, editor);
+        boolean replied = manager.replyToEnquiry(enquiry, replyText, editor);
+        
+        if (replied) {
+            // Update in data manager
+            enquiryDataManager.updateEnquiry(enquiry);
+        }
+        
+        return replied;
     }
     
     /**
@@ -340,5 +395,26 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         return project.getEnquiries().stream()
             .filter(e -> !e.isAnswered())
             .collect(Collectors.toList());
+    }
+    
+    /**
+     * Saves all enquiries to the data manager.
+     * 
+     * @return true if all enquiries were successfully saved, false otherwise
+     */
+    public boolean saveAllEnquiries() {
+        return enquiryDataManager.saveEnquiries(new ArrayList<>(enquiryMap.values()));
+    }
+    
+    /**
+     * Reloads all enquiries from the data manager.
+     * 
+     * @return true if enquiries were successfully reloaded, false otherwise
+     */
+    public boolean reloadEnquiries() {
+        enquiryMap.clear();
+        editorMap.clear();
+        loadEnquiries();
+        return true;
     }
 }

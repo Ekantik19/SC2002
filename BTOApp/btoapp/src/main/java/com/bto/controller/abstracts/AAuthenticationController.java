@@ -1,3 +1,4 @@
+// AAuthenticationController.java
 package com.bto.controller.abstracts;
 
 import java.util.HashMap;
@@ -189,5 +190,23 @@ public abstract class AAuthenticationController extends ABaseController implemen
         
         userMap.put(user.getNric(), user);
         return true;
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean loadUserData(String filePath) {
+        // This is an abstract method that will be implemented by concrete subclasses
+        return false;
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean saveUserData(String filePath) {
+        // This is an abstract method that will be implemented by concrete subclasses
+        return false;
     }
 }

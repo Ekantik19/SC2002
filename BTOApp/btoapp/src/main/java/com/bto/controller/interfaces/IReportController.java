@@ -3,99 +3,76 @@ package com.bto.controller.interfaces;
 import java.util.List;
 
 import com.bto.model.HDBManager;
-import com.bto.model.HDBOfficer;
-import com.bto.model.Receipt;
 import com.bto.model.Report;
 import com.bto.model.enums.FlatType;
 
 /**
  * Interface for Report Controller in the BTO Management System.
- * Defines methods for generating reports and receipts.
+ * Defines methods for generating and managing reports.
  * 
  * @author Your Name
  * @version 1.0
  */
 public interface IReportController {
-    
     /**
-     * Generates a receipt for a flat booking.
+     * Generates a comprehensive project booking report.
      * 
-     * @param applicationId The ID of the application to generate a receipt for
-     * @param officer The officer generating the receipt
-     * @return The generated receipt if successful, null otherwise
-     */
-    Receipt generateBookingReceipt(String applicationId, HDBOfficer officer);
-    
-    /**
-     * Generates a project booking report.
-     * 
-     * @param projectId The ID of the project to generate a report for
-     * @param reportTitle The title of the report
+     * @param projectName The name of the project to generate a report for
      * @param manager The manager generating the report
      * @return The generated report if successful, null otherwise
      */
-    Report generateProjectBookingReport(String projectId, String reportTitle, HDBManager manager);
+    Report generateProjectBookingReport(String projectName, HDBManager manager);
     
     /**
-     * Generates a report of bookings filtered by marital status.
+     * Generates a filtered report based on marital status.
      * 
-     * @param projectId The ID of the project to generate a report for
+     * @param projectName The name of the project
      * @param maritalStatus The marital status to filter by
      * @param manager The manager generating the report
-     * @return The generated report if successful, null otherwise
+     * @return The generated filtered report
      */
-    Report generateMaritalStatusReport(String projectId, String maritalStatus, HDBManager manager);
+    Report generateMaritalStatusReport(String projectName, String maritalStatus, HDBManager manager);
     
     /**
-     * Generates a report of bookings filtered by flat type.
+     * Generates a filtered report based on flat type.
      * 
-     * @param projectId The ID of the project to generate a report for
+     * @param projectName The name of the project
      * @param flatType The flat type to filter by
      * @param manager The manager generating the report
-     * @return The generated report if successful, null otherwise
+     * @return The generated filtered report
      */
-    Report generateFlatTypeReport(String projectId, FlatType flatType, HDBManager manager);
+    Report generateFlatTypeReport(String projectName, FlatType flatType, HDBManager manager);
     
     /**
-     * Generates a report of bookings filtered by age range.
+     * Generates a filtered report based on age range.
      * 
-     * @param projectId The ID of the project to generate a report for
+     * @param projectName The name of the project
      * @param minAge The minimum age to include
      * @param maxAge The maximum age to include
      * @param manager The manager generating the report
-     * @return The generated report if successful, null otherwise
+     * @return The generated filtered report
      */
-    Report generateAgeRangeReport(String projectId, int minAge, int maxAge, HDBManager manager);
+    Report generateAgeRangeReport(String projectName, int minAge, int maxAge, HDBManager manager);
     
     /**
-     * Exports a report to a file.
+     * Retrieves a specific report by its ID.
      * 
-     * @param reportId The ID of the report to export
-     * @param filePath The path to export the report to
-     * @param manager The manager exporting the report
-     * @return true if the export was successful, false otherwise
-     */
-    boolean exportReport(String reportId, String filePath, HDBManager manager);
-    
-    /**
-     * Gets a report by its ID.
-     * 
-     * @param reportId The ID of the report to retrieve
-     * @return The requested report if found, null otherwise
+     * @param reportId The unique identifier of the report
+     * @return The report if found, null otherwise
      */
     Report getReportById(String reportId);
     
     /**
-     * Gets all reports for a project.
+     * Retrieves all reports for a specific project.
      * 
-     * @param projectId The ID of the project to get reports for
+     * @param projectName The name of the project
      * @param manager The manager requesting the reports
      * @return A list of reports for the specified project
      */
-    List<Report> getProjectReports(String projectId, HDBManager manager);
+    List<Report> getProjectReports(String projectName, HDBManager manager);
     
     /**
-     * Gets all reports generated by a manager.
+     * Retrieves all reports generated by a specific manager.
      * 
      * @param manager The manager who generated the reports
      * @return A list of reports generated by the specified manager

@@ -10,7 +10,8 @@ import com.bto.model.enums.FlatType;
 
 /**
  * Interface for Application Controller in the BTO Management System.
- * Defines methods to manage BTO applications.
+ * Defines methods to manage BTO application submissions, status changes, 
+ * withdrawals, and retrieval of application information.
  * 
  * @author Your Name
  * @version 1.0
@@ -87,14 +88,6 @@ public interface IApplicationController {
      */
     boolean rejectApplication(String applicationId, com.bto.model.HDBManager manager);
     
-    /**
-     * Books a flat for an approved application.
-     * 
-     * @param applicationId The ID of the application to book a flat for
-     * @param officer The officer booking the flat
-     * @return true if the booking was successful, false otherwise
-     */
-    boolean bookFlat(String applicationId, com.bto.model.HDBOfficer officer);
     
     /**
      * Approves a withdrawal request.

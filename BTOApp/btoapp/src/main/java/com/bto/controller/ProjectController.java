@@ -2,370 +2,269 @@ package com.bto.controller;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.bto.controller.abstracts.ABaseController;
 import com.bto.controller.interfaces.IProjectController;
+import com.bto.datamanager.ProjectDataManager;
 import com.bto.model.Applicant;
 import com.bto.model.HDBManager;
 import com.bto.model.HDBOfficer;
 import com.bto.model.Project;
 import com.bto.model.enums.FlatType;
-import com.bto.service.EligibilityCheckerService;
 
 /**
- * Controller for managing projects in the BTO Management System.
- * 
- * @author Your Name
- * @version 1.0
+ * Controller for managing BTO projects in the system.
+ * Implements IProjectController and extends ABaseController.
  */
 public class ProjectController extends ABaseController implements IProjectController {
     
-    private Map<String, Project> projectMap;
-    private EligibilityCheckerService eligibilityService;
+    private ProjectDataManager projectDataManager;
     
     /**
      * Constructor for ProjectController.
+     * 
+     * @param projectDataManager The data manager for project operations
      */
-    public ProjectController() {
-        this.projectMap = new HashMap<>();
-        this.eligibilityService = new EligibilityCheckerService();
+    public ProjectController(ProjectDataManager projectDataManager) {
+        this.projectDataManager = projectDataManager;
     }
     
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Project createProject(String projectName, String neighborhood, 
-                               List<FlatType> flatTypes, List<Integer> numberOfUnits, 
-                               List<Double> sellingPrices, Date openingDate, 
-                               Date closingDate, HDBManager manager, int officerSlots) {
-        
-        // Validate inputs
+                                List<FlatType> flatTypes, List<Integer> numberOfUnits, 
+                                List<Double> sellingPrices, Date openingDate, 
+                                Date closingDate, HDBManager manager, int officerSlots) {
+        // Validate input parameters
         if (!validateNotNullOrEmpty(projectName, "Project Name") || 
-            !validateNotNullOrEmpty(neighborhood, "Neighborhood") || 
-            !validateNotNull(flatTypes, "Flat Types") || 
-            !validateNotNull(numberOfUnits, "Number of Units") || 
-            !validateNotNull(sellingPrices, "Selling Prices") || 
-            !validateNotNull(openingDate, "Opening Date") || 
-            !validateNotNull(closingDate, "Closing Date") || 
-            !validateNotNull(manager, "Manager")) {
+            !validateNotNullOrEmpty(neighborhood, "Neighborhood") ||
+            flatTypes == null || numberOfUnits == null || sellingPrices == null ||
+            openingDate == null || closingDate == null || manager == null) {
             return null;
         }
         
-        // Check if flat types, units and prices have the same size
-        if (flatTypes.size() != numberOfUnits.size() || flatTypes.size() != sellingPrices.size()) {
-            System.out.println("Flat types, number of units, and selling prices must have the same size");
+        // Check if manager can create project (only one project per application period)
+        List<Project> managerProjects = getProjectsByManager(manager);
+        boolean canCreateProject = managerProjects.stream()
+            .noneMatch(p -> isOverlappingPeriod(p, openingDate, closingDate));
+        
+        if (!canCreateProject) {
+            System.out.println("Manager cannot create multiple projects in the same application period.");
             return null;
         }
         
-        // Check if project with same name already exists
-        for (Project existingProject : projectMap.values()) {
-            if (existingProject.getProjectName().equalsIgnoreCase(projectName)) {
-                System.out.println("Project with this name already exists");
-                return null;
-            }
-        }
+        // Create project through manager
+        Project project = manager.createProject(projectName, neighborhood, 
+                                               flatTypes, numberOfUnits, 
+                                               sellingPrices, openingDate, 
+                                               closingDate, officerSlots);
         
-        // Create project using the manager's createProject method
-        Project project = manager.createProject(projectName, neighborhood, flatTypes, 
-                                               numberOfUnits, sellingPrices, 
-                                               openingDate, closingDate, officerSlots);
-        
+        // Add project to data manager
         if (project != null) {
-            // Generate a project ID
-            String projectId = generateProjectId(projectName);
-            
-            // Add to project map
-            projectMap.put(projectId, project);
+            projectDataManager.addProject(project);
         }
         
         return project;
     }
     
-    /**
-     * Helper method to generate a project ID.
-     * 
-     * @param projectName The name of the project
-     * @return A unique project ID
-     */
-    private String generateProjectId(String projectName) {
-        // Simple ID generation - in a real system, this would be more sophisticated
-        return "PRJ-" + projectName.substring(0, Math.min(5, projectName.length())).toUpperCase() + 
-               "-" + System.currentTimeMillis() % 10000;
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean updateProject(String projectId, String projectName, 
-                               String neighborhood, Date openingDate, 
-                               Date closingDate, int officerSlots, 
-                               HDBManager manager) {
-        
-        // Validate inputs
-        if (!validateNotNullOrEmpty(projectId, "Project ID") || 
-            !validateNotNullOrEmpty(projectName, "Project Name") || 
-            !validateNotNullOrEmpty(neighborhood, "Neighborhood") || 
-            !validateNotNull(openingDate, "Opening Date") || 
-            !validateNotNull(closingDate, "Closing Date") || 
-            !validateNotNull(manager, "Manager")) {
+                                String neighborhood, Date openingDate, 
+                                Date closingDate, int officerSlots, 
+                                HDBManager manager) {
+        // Validate input parameters
+        if (!validateNotNullOrEmpty(projectId, "Project ID") ||
+            !validateNotNullOrEmpty(projectName, "Project Name") ||
+            !validateNotNullOrEmpty(neighborhood, "Neighborhood") ||
+            openingDate == null || closingDate == null || manager == null) {
             return false;
         }
         
-        // Get project
-        Project project = projectMap.get(projectId);
+        // Find the project
+        Project project = getProjectById(projectId);
         if (project == null) {
-            System.out.println("Project not found");
             return false;
         }
         
-        // Update project using the manager's updateProject method
-        return manager.updateProject(project, projectName, neighborhood, 
-                                    openingDate, closingDate, officerSlots);
+        // Delegate update to manager
+        boolean updated = manager.updateProject(project, projectName, neighborhood, 
+                                               openingDate, closingDate, officerSlots);
+        
+        // If update successful, save to data manager
+        if (updated) {
+            projectDataManager.updateProject(project);
+        }
+        
+        return updated;
     }
     
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean deleteProject(String projectId, HDBManager manager) {
-        if (!validateNotNullOrEmpty(projectId, "Project ID") || 
-            !validateNotNull(manager, "Manager")) {
+        // Validate input parameters
+        if (!validateNotNullOrEmpty(projectId, "Project ID") || manager == null) {
             return false;
         }
         
-        // Get project
-        Project project = projectMap.get(projectId);
+        // Find the project
+        Project project = getProjectById(projectId);
         if (project == null) {
-            System.out.println("Project not found");
             return false;
         }
         
-        // Delete project using the manager's deleteProject method
+        // Delegate deletion to manager
         boolean deleted = manager.deleteProject(project);
         
+        // If deletion successful, remove from data manager
         if (deleted) {
-            // Remove from project map
-            projectMap.remove(projectId);
+            projectDataManager.removeProject(projectId);
         }
         
         return deleted;
     }
     
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean toggleProjectVisibility(String projectId, boolean visible, HDBManager manager) {
-        if (!validateNotNullOrEmpty(projectId, "Project ID") || 
-            !validateNotNull(manager, "Manager")) {
+        // Validate input parameters
+        if (!validateNotNullOrEmpty(projectId, "Project ID") || manager == null) {
             return false;
         }
         
-        // Get project
-        Project project = projectMap.get(projectId);
+        // Find the project
+        Project project = getProjectById(projectId);
         if (project == null) {
-            System.out.println("Project not found");
             return false;
         }
         
-        // Toggle visibility using the manager's toggleProjectVisibility method
+        // Delegate visibility toggle to manager
         return manager.toggleProjectVisibility(project, visible);
     }
     
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean registerOfficerForProject(String projectId, HDBOfficer officer) {
-        if (!validateNotNullOrEmpty(projectId, "Project ID") || 
-            !validateNotNull(officer, "Officer")) {
+        // Validate input parameters
+        if (!validateNotNullOrEmpty(projectId, "Project ID") || officer == null) {
             return false;
         }
         
-        // Get project
-        Project project = projectMap.get(projectId);
+        // Find the project
+        Project project = getProjectById(projectId);
         if (project == null) {
-            System.out.println("Project not found");
             return false;
         }
         
-        // Register officer using the officer's registerForProject method
+        // Check officer eligibility
+        if (officer.getCurrentApplication() != null && 
+            officer.getCurrentApplication().getProject().getProjectName().equals(projectId)) {
+            System.out.println("Officer cannot register for a project they are applying to.");
+            return false;
+        }
+        
+        // Attempt officer registration
         return officer.registerForProject(project);
     }
     
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean approveOfficerRegistration(String officerNric, HDBManager manager) {
-        if (!validateNotNullOrEmpty(officerNric, "Officer NRIC") || 
-            !validateNotNull(manager, "Manager")) {
-            return false;
-        }
-        
-        // Find the officer
-        HDBOfficer officer = null;
-        for (Project project : manager.getCreatedProjects()) {
-            for (HDBOfficer registeredOfficer : project.getAssignedOfficers()) {
-                if (registeredOfficer.getNric().equals(officerNric) && 
-                    !registeredOfficer.isRegistrationApproved()) {
-                    officer = registeredOfficer;
-                    break;
-                }
-            }
-            if (officer != null) break;
-        }
-        
-        if (officer == null) {
-            System.out.println("Officer not found or already approved");
-            return false;
-        }
-        
-        // Approve registration using the manager's approveOfficerRegistration method
-        return manager.approveOfficerRegistration(officer);
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean rejectOfficerRegistration(String officerNric, HDBManager manager) {
-        if (!validateNotNullOrEmpty(officerNric, "Officer NRIC") || 
-            !validateNotNull(manager, "Manager")) {
-            return false;
-        }
-        
-        // Find the officer
-        HDBOfficer officer = null;
-        for (Project project : manager.getCreatedProjects()) {
-            for (HDBOfficer registeredOfficer : project.getAssignedOfficers()) {
-                if (registeredOfficer.getNric().equals(officerNric) && 
-                    !registeredOfficer.isRegistrationApproved()) {
-                    officer = registeredOfficer;
-                    break;
-                }
-            }
-            if (officer != null) break;
-        }
-        
-        if (officer == null) {
-            System.out.println("Officer not found or already approved");
-            return false;
-        }
-        
-        // Reject registration using the manager's rejectOfficerRegistration method
-        return manager.rejectOfficerRegistration(officer);
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Project getProjectById(String projectId) {
+        // Validate input
         if (!validateNotNullOrEmpty(projectId, "Project ID")) {
             return null;
         }
         
-        return projectMap.get(projectId);
-    }
-    //add hava doc
-    public Project getProjectByName(String projectName) {
-        if (!validateNotNullOrEmpty(projectName, "Project Name")) {
-            return null;
-        }
-        
-        return projectMap.values().stream()
-            .filter(p -> p.getProjectName().equalsIgnoreCase(projectName))
-            .findFirst()
-            .orElse(null);
+        return projectDataManager.getProjectByName(projectId);
     }
     
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<Project> getAllProjects() {
-        return new ArrayList<>(projectMap.values());
+        return projectDataManager.getAllProjects();
     }
     
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<Project> getProjectsByManager(HDBManager manager) {
-        if (!validateNotNull(manager, "Manager")) {
+        // Validate input
+        if (manager == null) {
             return new ArrayList<>();
         }
         
-        return manager.getCreatedProjects();
+        return projectDataManager.getAllProjects().stream()
+            .filter(p -> p.getManagerInCharge().getNric().equals(manager.getNric()))
+            .collect(Collectors.toList());
     }
     
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<Project> getProjectsByNeighborhood(String neighborhood) {
+        // Validate input
         if (!validateNotNullOrEmpty(neighborhood, "Neighborhood")) {
             return new ArrayList<>();
         }
         
-        return projectMap.values().stream()
+        return projectDataManager.getAllProjects().stream()
             .filter(p -> p.getNeighborhood().equalsIgnoreCase(neighborhood))
             .collect(Collectors.toList());
     }
     
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<Project> getProjectsByFlatType(FlatType flatType) {
-        if (!validateNotNull(flatType, "Flat Type")) {
+        // Validate input
+        if (flatType == null) {
             return new ArrayList<>();
         }
         
-        return projectMap.values().stream()
-            .filter(p -> {
-                for (Project.FlatTypeInfo info : p.getFlatTypeInfoList()) {
-                    if (info.getFlatType() == flatType) {
-                        return true;
-                    }
-                }
-                return false;
-            })
+        return projectDataManager.getAllProjects().stream()
+            .filter(p -> p.getFlatTypeInfoList().stream()
+                .anyMatch(info -> info.getFlatType() == flatType))
             .collect(Collectors.toList());
     }
     
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<Project> getVisibleProjectsForApplicant(Applicant applicant) {
-        if (!validateNotNull(applicant, "Applicant")) {
+        // Validate input
+        if (applicant == null) {
             return new ArrayList<>();
         }
         
-        // Check if applicant is eligible for BTO
-        if (!eligibilityService.isEligibleForBTO(applicant)) {
-            return new ArrayList<>();
-        }
-        
-        return projectMap.values().stream()
-            .filter(p -> p.isVisible() && p.isOpenForApplications())
-            .filter(p -> {
-                // Check if there's at least one flat type the applicant is eligible for
-                for (Project.FlatTypeInfo info : p.getFlatTypeInfoList()) {
-                    if (eligibilityService.isEligibleForFlatType(applicant, info.getFlatType())) {
-                        return true;
-                    }
-                }
-                return false;
-            })
+        return projectDataManager.getAllProjects().stream()
+            .filter(p -> p.isVisible() && 
+                        (applicant.isMarried() || 
+                         (applicant.getAge() >= 35 && 
+                          p.getFlatTypeInfoList().stream()
+                           .anyMatch(info -> info.getFlatType() == FlatType.TWO_ROOM))))
             .collect(Collectors.toList());
     }
+    
+    @Override
+    public List<HDBOfficer> getApprovedOfficersForProject(String projectId) {
+        // Validate input
+        if (!validateNotNullOrEmpty(projectId, "Project ID")) {
+            return new ArrayList<>();
+        }
+        
+        Project project = getProjectById(projectId);
+        return project != null ? project.getAssignedOfficers() : new ArrayList<>();
+    }
+    
+    @Override
+    public int getRemainingOfficerSlots(String projectId) {
+        // Validate input
+        if (!validateNotNullOrEmpty(projectId, "Project ID")) {
+            return 0;
+        }
+        
+        Project project = getProjectById(projectId);
+        return project != null ? project.getRemainingOfficerSlots() : 0;
+    }
+    
+    /**
+     * Checks if a project's application period overlaps with given dates.
+     * 
+     * @param project The project to check
+     * @param newOpeningDate The new project's opening date
+     * @param newClosingDate The new project's closing date
+     * @return true if periods overlap, false otherwise
+     */
+    private boolean isOverlappingPeriod(Project project, Date newOpeningDate, Date newClosingDate) {
+        return !(newClosingDate.before(project.getApplicationOpeningDate()) || 
+                 newOpeningDate.after(project.getApplicationClosingDate()));
+    }
 }
+

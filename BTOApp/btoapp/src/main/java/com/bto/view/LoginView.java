@@ -1,5 +1,7 @@
 package com.bto.view;
 
-public class LoginView {
+import com.bto.view.abstracts.ARenderView;
+
+public class LoginView{
 
 }

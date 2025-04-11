@@ -145,8 +145,9 @@ public class HDBManager extends User {
         if (!project.getApplications().isEmpty()) {
             return false;
         }
-        
+
         createdProjects.remove(project);
+        
         return true;
     }
     
