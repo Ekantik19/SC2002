@@ -36,6 +36,14 @@ public class ProjectController extends ABaseController implements IProjectContro
             System.out.println("DEBUG: ProjectDataManager has " + projects.size() + " projects");
             for (Project p : projects) {
                 System.out.println("DEBUG: Available project: " + p.getProjectName());
+                System.out.println("DEBUG: Project visibility: " + p.isVisible());
+                System.out.println("DEBUG: Application period: " + p.getApplicationOpeningDate() + " to " + p.getApplicationClosingDate());
+                
+                // Debug flat types
+                System.out.println("DEBUG: Flat types in project:");
+                for (Project.FlatTypeInfo info : p.getFlatTypeInfoList()) {
+                    System.out.println("DEBUG: - " + info.getFlatType().getDisplayName() + ": " + info.getNumberOfUnits() + " units");
+                }
             }
         } else {
             System.out.println("DEBUG: ProjectDataManager is null");
@@ -364,32 +372,84 @@ public class ProjectController extends ABaseController implements IProjectContro
         boolean isSingle = !applicant.isMarried();
         int age = applicant.getAge();
         
-        List<Project> eligibleProjects = projectDataManager.getAllProjects().stream()
-            .filter(p -> {
-                // Must be visible
-                if (!p.isVisible()) {
-                    return false;
+        System.out.println("DEBUG: Getting visible projects for " + applicant.getName() + 
+                         " (isSingle=" + isSingle + ", age=" + age + ")");
+        
+        // Get all projects first for debugging
+        List<Project> allProjects = projectDataManager.getAllProjects();
+        System.out.println("DEBUG: Total projects available: " + allProjects.size());
+        
+        // For each project, print detailed eligibility check
+        List<Project> eligibleProjects = new ArrayList<>();
+        
+        for (Project project : allProjects) {
+            System.out.println("\nDEBUG: Checking eligibility for project: " + project.getProjectName());
+            
+            // Check visibility
+            if (!project.isVisible()) {
+                System.out.println("DEBUG: Project failed visibility check - isVisible: " + project.isVisible());
+                continue;
+            }
+            
+            // Check application period
+            Date now = new Date();
+            boolean inPeriod = now.after(project.getApplicationOpeningDate()) && 
+                              now.before(project.getApplicationClosingDate());
+            
+            System.out.println("DEBUG: Date check - Current: " + now + 
+                              ", Opening: " + project.getApplicationOpeningDate() +
+                              ", Closing: " + project.getApplicationClosingDate() +
+                              ", In period: " + inPeriod);
+            
+            if (!inPeriod) {
+                System.out.println("DEBUG: Project failed application period check");
+                continue;
+            }
+            
+            // Check eligibility based on marital status and age
+            boolean eligible = false;
+            
+            if (isSingle) {
+                // Single applicants must be 35+ and project must have 2-Room flats
+                if (age < 35) {
+                    System.out.println("DEBUG: Single applicant too young (age: " + age + ")");
+                    continue;
                 }
                 
-                // For single applicants 35 and above, only show projects with 2-Room flats
-                if (isSingle) {
-                    if (age < 35) {
-                        return false;
-                    }
-                    
-                    return p.getFlatTypeInfoList().stream()
-                        .anyMatch(info -> info.getFlatType() == FlatType.TWO_ROOM && 
-                                info.getNumberOfUnits() > 0);
+                boolean has2Room = project.getFlatTypeInfoList().stream()
+                    .anyMatch(info -> {
+                        boolean matches = info.getFlatType() == FlatType.TWO_ROOM && 
+                                      info.getNumberOfUnits() > 0;
+                        System.out.println("DEBUG: Checking for 2-Room - FlatType: " + 
+                                          info.getFlatType().getDisplayName() + 
+                                          ", Units: " + info.getNumberOfUnits() +
+                                          ", Matches: " + matches);
+                        return matches;
+                    });
+                
+                if (!has2Room) {
+                    System.out.println("DEBUG: No available 2-Room flats for single applicant");
+                    continue;
                 }
                 
-                // Married applicants 21 and above can apply for any flat type
-                return age >= 21;
-            })
-            .collect(Collectors.toList());
+                eligible = true;
+            } else {
+                // Married applicants must be 21+
+                if (age < 21) {
+                    System.out.println("DEBUG: Married applicant too young (age: " + age + ")");
+                    continue;
+                }
+                
+                eligible = true;
+            }
+            
+            if (eligible) {
+                System.out.println("DEBUG: Project is eligible for applicant");
+                eligibleProjects.add(project);
+            }
+        }
         
-        System.out.println("DEBUG: getVisibleProjectsForApplicant found " + eligibleProjects.size() + 
-                          " eligible projects for " + applicant.getName());
-        
+        System.out.println("DEBUG: Found " + eligibleProjects.size() + " eligible projects");
         return eligibleProjects;
     }
     

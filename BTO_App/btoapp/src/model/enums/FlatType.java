@@ -13,6 +13,7 @@ public enum FlatType {
      */
     TWO_ROOM("2-Room"),
     
+    
     /**
      * 3-Room flat type.
      * Available only to married couples.

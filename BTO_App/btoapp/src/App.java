@@ -158,9 +158,24 @@ public class App {
         try {
             // Display application title
             printAppTitle();
-
-            // Render login choice menu
-            renderLoginChoice();
+    
+            boolean exitSystem = false;
+            while (!exitSystem) {
+                // Render login choice menu
+                User currentUser = renderLoginChoice();
+                
+                if (currentUser == null) {
+                    // User canceled login or login failed
+                    System.out.println("Would you like to exit the system? (Y/N)");
+                    Scanner scanner = new Scanner(System.in);
+                    String response = scanner.nextLine();
+                    if (response.equalsIgnoreCase("Y")) {
+                        exitSystem = true;
+                    }
+                }
+            }
+            
+            System.out.println("Thank you for using the BTO Management System. Goodbye!");
         } catch (Exception e) {
             System.out.println("ERROR during startup: " + e.getMessage());
             e.printStackTrace();
@@ -185,7 +200,7 @@ public class App {
     /**
      * Displays the Main Menu and prompts for login.
      */
-    private void renderLoginChoice() {
+    private User renderLoginChoice() {
         String input = "Main Menu > Please login with your NRIC and password";
         String space = String.format("%" + (99 - input.length()) + "s", "");
         
@@ -208,9 +223,9 @@ public class App {
                 enquiryController
             );
             mainMenuView.display();
-        } else {
-            System.out.println("Login failed or canceled. Exiting system.");
         }
+        
+        return currentUser;
     }
 
     /**
