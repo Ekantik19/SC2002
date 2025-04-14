@@ -1,13 +1,12 @@
 package controller;
 
+import controller.abstracts.ABaseController;
+import controller.interfaces.IProjectController;
+import datamanager.ProjectDataManager;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import controller.abstracts.ABaseController;
-import controller.interfaces.IProjectController;
-import datamanager.ProjectDataManager;
 import model.Applicant;
 import model.HDBManager;
 import model.HDBOfficer;
@@ -29,6 +28,18 @@ public class ProjectController extends ABaseController implements IProjectContro
      */
     public ProjectController(ProjectDataManager projectDataManager) {
         this.projectDataManager = projectDataManager;
+        
+        // Debug output
+        System.out.println("DEBUG: ProjectController initialized with projectDataManager");
+        if (projectDataManager != null) {
+            List<Project> projects = projectDataManager.getAllProjects();
+            System.out.println("DEBUG: ProjectDataManager has " + projects.size() + " projects");
+            for (Project p : projects) {
+                System.out.println("DEBUG: Available project: " + p.getProjectName());
+            }
+        } else {
+            System.out.println("DEBUG: ProjectDataManager is null");
+        }
     }
     
     @Override
@@ -41,6 +52,7 @@ public class ProjectController extends ABaseController implements IProjectContro
             !validateNotNullOrEmpty(neighborhood, "Neighborhood") ||
             flatTypes == null || numberOfUnits == null || sellingPrices == null ||
             openingDate == null || closingDate == null || manager == null) {
+            System.out.println("DEBUG: Project creation validation failed");
             return null;
         }
         
@@ -54,15 +66,35 @@ public class ProjectController extends ABaseController implements IProjectContro
             return null;
         }
         
-        // Create project through manager
-        Project project = manager.createProject(projectName, neighborhood, 
-                                               flatTypes, numberOfUnits, 
-                                               sellingPrices, openingDate, 
-                                               closingDate, officerSlots);
+        // Create project through manager or directly
+        Project project = null;
+        try {
+            System.out.println("DEBUG: Attempting to create project through manager: " + manager.getName());
+            project = manager.createProject(projectName, neighborhood, 
+                                           flatTypes, numberOfUnits, 
+                                           sellingPrices, openingDate, 
+                                           closingDate, officerSlots);
+        } catch (Exception e) {
+            System.out.println("DEBUG: Error creating project through manager: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Create project directly
+            System.out.println("DEBUG: Creating project directly");
+            project = new Project(projectName, neighborhood, flatTypes, numberOfUnits, 
+                                 sellingPrices, openingDate, closingDate, manager, officerSlots);
+        }
         
         // Add project to data manager
         if (project != null) {
-            projectDataManager.addProject(project);
+            System.out.println("DEBUG: Project created: " + project.getProjectName());
+            boolean added = projectDataManager.addProject(project);
+            System.out.println("DEBUG: Project added to data manager: " + added);
+            
+            // Verify the project is in the map
+            List<Project> allProjects = projectDataManager.getAllProjects();
+            System.out.println("DEBUG: ProjectDataManager now has " + allProjects.size() + " projects");
+        } else {
+            System.out.println("DEBUG: Failed to create project");
         }
         
         return project;
@@ -84,16 +116,40 @@ public class ProjectController extends ABaseController implements IProjectContro
         // Find the project
         Project project = getProjectById(projectId);
         if (project == null) {
+            System.out.println("DEBUG: Project not found for update: " + projectId);
             return false;
         }
         
-        // Delegate update to manager
-        boolean updated = manager.updateProject(project, projectName, neighborhood, 
-                                               openingDate, closingDate, officerSlots);
+        System.out.println("DEBUG: Updating project: " + projectId);
+        
+        // Handle project update directly if manager method fails
+        boolean updated = false;
+        try {
+            // Delegate update to manager
+            updated = manager.updateProject(project, projectName, neighborhood, 
+                                           openingDate, closingDate, officerSlots);
+        } catch (Exception e) {
+            System.out.println("DEBUG: Error updating project through manager: " + e.getMessage());
+            
+            // Update project directly
+            try {
+                project.setProjectName(projectName);
+                project.setNeighborhood(neighborhood);
+                project.setApplicationOpeningDate(openingDate);
+                project.setApplicationClosingDate(closingDate);
+                project.setOfficerSlots(officerSlots);
+                updated = true;
+                System.out.println("DEBUG: Project updated directly");
+            } catch (Exception ex) {
+                System.out.println("DEBUG: Error updating project directly: " + ex.getMessage());
+                updated = false;
+            }
+        }
         
         // If update successful, save to data manager
         if (updated) {
-            projectDataManager.updateProject(project);
+            boolean saved = projectDataManager.updateProject(project);
+            System.out.println("DEBUG: Project update saved to data manager: " + saved);
         }
         
         return updated;
@@ -106,18 +162,32 @@ public class ProjectController extends ABaseController implements IProjectContro
             return false;
         }
         
+        System.out.println("DEBUG: Attempting to delete project: " + projectId);
+        
         // Find the project
         Project project = getProjectById(projectId);
         if (project == null) {
+            System.out.println("DEBUG: Project not found for deletion: " + projectId);
+            return false;
+        }
+        
+        // Check if manager is authorized to delete this project
+        if (project.getManagerInCharge() == null || 
+            !project.getManagerInCharge().getNric().equals(manager.getNric())) {
+            System.out.println("DEBUG: Manager not authorized to delete this project");
             return false;
         }
         
         // Delegate deletion to manager
-        boolean deleted = manager.deleteProject(project);
-        
-        // If deletion successful, remove from data manager
-        if (deleted) {
-            projectDataManager.removeProject(projectId);
+        boolean deleted = false;
+        try {
+            deleted = manager.deleteProject(project);
+        } catch (Exception e) {
+            System.out.println("DEBUG: Error deleting project through manager: " + e.getMessage());
+            
+            // Delete directly from data manager as fallback
+            deleted = projectDataManager.removeProject(projectId);
+            System.out.println("DEBUG: Project deleted directly from data manager: " + deleted);
         }
         
         return deleted;
@@ -130,14 +200,36 @@ public class ProjectController extends ABaseController implements IProjectContro
             return false;
         }
         
+        System.out.println("DEBUG: Toggling visibility for project: " + projectId + " to: " + visible);
+        
         // Find the project
         Project project = getProjectById(projectId);
         if (project == null) {
+            System.out.println("DEBUG: Project not found for visibility toggle: " + projectId);
             return false;
         }
         
-        // Delegate visibility toggle to manager
-        return manager.toggleProjectVisibility(project, visible);
+        // Check if manager is authorized
+        if (project.getManagerInCharge() == null || 
+            !project.getManagerInCharge().getNric().equals(manager.getNric())) {
+            System.out.println("DEBUG: Manager not authorized to toggle project visibility");
+            return false;
+        }
+        
+        // Toggle visibility
+        boolean toggled = false;
+        try {
+            toggled = manager.toggleProjectVisibility(project, visible);
+        } catch (Exception e) {
+            System.out.println("DEBUG: Error toggling visibility through manager: " + e.getMessage());
+            
+            // Update visibility directly
+            project.setVisible(visible);
+            toggled = projectDataManager.updateProject(project);
+            System.out.println("DEBUG: Project visibility toggled directly: " + toggled);
+        }
+        
+        return toggled;
     }
     
     @Override
@@ -147,21 +239,38 @@ public class ProjectController extends ABaseController implements IProjectContro
             return false;
         }
         
+        System.out.println("DEBUG: Registering officer for project: " + projectId);
+        
         // Find the project
         Project project = getProjectById(projectId);
         if (project == null) {
+            System.out.println("DEBUG: Project not found for officer registration: " + projectId);
             return false;
         }
         
         // Check officer eligibility
         if (officer.getCurrentApplication() != null && 
             officer.getCurrentApplication().getProject().getProjectName().equals(projectId)) {
-            System.out.println("Officer cannot register for a project they are applying to.");
+            System.out.println("DEBUG: Officer cannot register for a project they're applying to");
             return false;
         }
         
         // Attempt officer registration
-        return officer.registerForProject(project);
+        boolean registered = false;
+        try {
+            registered = officer.registerForProject(project);
+        } catch (Exception e) {
+            System.out.println("DEBUG: Error registering officer through officer method: " + e.getMessage());
+            
+            // Try direct registration
+            registered = project.addOfficer(officer);
+            if (registered) {
+                projectDataManager.updateProject(project);
+            }
+        }
+        
+        System.out.println("DEBUG: Officer registration result: " + registered);
+        return registered;
     }
     
     @Override
@@ -171,24 +280,40 @@ public class ProjectController extends ABaseController implements IProjectContro
             return null;
         }
         
-        return projectDataManager.getProjectByName(projectId);
+        Project project = projectDataManager.getProjectByName(projectId);
+        if (project == null) {
+            System.out.println("DEBUG: Project not found by ID: " + projectId);
+        } else {
+            System.out.println("DEBUG: Retrieved project: " + project.getProjectName());
+        }
+        
+        return project;
     }
     
     @Override
     public List<Project> getAllProjects() {
-        return projectDataManager.getAllProjects();
+        List<Project> projects = projectDataManager.getAllProjects();
+        System.out.println("DEBUG: getAllProjects returning " + projects.size() + " projects");
+        return projects;
     }
     
     @Override
     public List<Project> getProjectsByManager(HDBManager manager) {
         // Validate input
         if (manager == null) {
+            System.out.println("DEBUG: getProjectsByManager received null manager");
             return new ArrayList<>();
         }
         
-        return projectDataManager.getAllProjects().stream()
-            .filter(p -> p.getManagerInCharge().getNric().equals(manager.getNric()))
+        List<Project> projects = projectDataManager.getAllProjects().stream()
+            .filter(p -> p.getManagerInCharge() != null && 
+                   p.getManagerInCharge().getNric().equals(manager.getNric()))
             .collect(Collectors.toList());
+        
+        System.out.println("DEBUG: getProjectsByManager found " + projects.size() + 
+                          " projects for manager: " + manager.getName());
+        
+        return projects;
     }
     
     @Override
@@ -198,38 +323,74 @@ public class ProjectController extends ABaseController implements IProjectContro
             return new ArrayList<>();
         }
         
-        return projectDataManager.getAllProjects().stream()
+        List<Project> projects = projectDataManager.getAllProjects().stream()
             .filter(p -> p.getNeighborhood().equalsIgnoreCase(neighborhood))
             .collect(Collectors.toList());
+        
+        System.out.println("DEBUG: getProjectsByNeighborhood found " + projects.size() + 
+                          " projects in " + neighborhood);
+        
+        return projects;
     }
     
     @Override
     public List<Project> getProjectsByFlatType(FlatType flatType) {
         // Validate input
         if (flatType == null) {
+            System.out.println("DEBUG: getProjectsByFlatType received null flatType");
             return new ArrayList<>();
         }
         
-        return projectDataManager.getAllProjects().stream()
+        List<Project> projects = projectDataManager.getAllProjects().stream()
             .filter(p -> p.getFlatTypeInfoList().stream()
-                .anyMatch(info -> info.getFlatType() == flatType))
+                .anyMatch(info -> info.getFlatType() == flatType && info.getNumberOfUnits() > 0))
             .collect(Collectors.toList());
+        
+        System.out.println("DEBUG: getProjectsByFlatType found " + projects.size() + 
+                          " projects with " + flatType.getDisplayName());
+        
+        return projects;
     }
     
     @Override
     public List<Project> getVisibleProjectsForApplicant(Applicant applicant) {
         // Validate input
         if (applicant == null) {
+            System.out.println("DEBUG: getVisibleProjectsForApplicant received null applicant");
             return new ArrayList<>();
         }
         
-        return projectDataManager.getAllProjects().stream()
-            .filter(p -> p.isVisible() && 
-                        (applicant.isMarried() || 
-                         (applicant.getAge() >= 35 && 
-                          p.getFlatTypeInfoList().stream()
-                           .anyMatch(info -> info.getFlatType() == FlatType.TWO_ROOM))))
+        // Get projects based on applicant's eligibility
+        boolean isSingle = !applicant.isMarried();
+        int age = applicant.getAge();
+        
+        List<Project> eligibleProjects = projectDataManager.getAllProjects().stream()
+            .filter(p -> {
+                // Must be visible
+                if (!p.isVisible()) {
+                    return false;
+                }
+                
+                // For single applicants 35 and above, only show projects with 2-Room flats
+                if (isSingle) {
+                    if (age < 35) {
+                        return false;
+                    }
+                    
+                    return p.getFlatTypeInfoList().stream()
+                        .anyMatch(info -> info.getFlatType() == FlatType.TWO_ROOM && 
+                                info.getNumberOfUnits() > 0);
+                }
+                
+                // Married applicants 21 and above can apply for any flat type
+                return age >= 21;
+            })
             .collect(Collectors.toList());
+        
+        System.out.println("DEBUG: getVisibleProjectsForApplicant found " + eligibleProjects.size() + 
+                          " eligible projects for " + applicant.getName());
+        
+        return eligibleProjects;
     }
     
     @Override
@@ -240,7 +401,16 @@ public class ProjectController extends ABaseController implements IProjectContro
         }
         
         Project project = getProjectById(projectId);
-        return project != null ? project.getAssignedOfficers() : new ArrayList<>();
+        if (project == null) {
+            System.out.println("DEBUG: getApprovedOfficersForProject - project not found: " + projectId);
+            return new ArrayList<>();
+        }
+        
+        List<HDBOfficer> officers = project.getAssignedOfficers();
+        System.out.println("DEBUG: getApprovedOfficersForProject found " + officers.size() + 
+                          " officers for project: " + projectId);
+        
+        return officers;
     }
     
     @Override
@@ -251,7 +421,15 @@ public class ProjectController extends ABaseController implements IProjectContro
         }
         
         Project project = getProjectById(projectId);
-        return project != null ? project.getRemainingOfficerSlots() : 0;
+        if (project == null) {
+            System.out.println("DEBUG: getRemainingOfficerSlots - project not found: " + projectId);
+            return 0;
+        }
+        
+        int remainingSlots = project.getRemainingOfficerSlots();
+        System.out.println("DEBUG: getRemainingOfficerSlots for " + projectId + ": " + remainingSlots);
+        
+        return remainingSlots;
     }
     
     /**
@@ -263,8 +441,18 @@ public class ProjectController extends ABaseController implements IProjectContro
      * @return true if periods overlap, false otherwise
      */
     private boolean isOverlappingPeriod(Project project, Date newOpeningDate, Date newClosingDate) {
-        return !(newClosingDate.before(project.getApplicationOpeningDate()) || 
-                 newOpeningDate.after(project.getApplicationClosingDate()));
+        if (project == null || newOpeningDate == null || newClosingDate == null) {
+            return false;
+        }
+        
+        boolean overlapping = !(newClosingDate.before(project.getApplicationOpeningDate()) || 
+                              newOpeningDate.after(project.getApplicationClosingDate()));
+        
+        if (overlapping) {
+            System.out.println("DEBUG: Detected overlapping application period with project: " + 
+                              project.getProjectName());
+        }
+        
+        return overlapping;
     }
 }
-

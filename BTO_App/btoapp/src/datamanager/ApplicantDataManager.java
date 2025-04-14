@@ -7,8 +7,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-
+import java.util.Map;
 import model.Applicant;
 import utils.FilePathConfig;
 
@@ -285,5 +286,22 @@ public class ApplicantDataManager {
         
         // NRIC should start with S or T, followed by 7 digits, and end with a letter
         return nric.matches("^[ST]\\d{7}[A-Z]$");
+    }
+
+    /**
+     * Gets a map of all applicants by NRIC.
+     * 
+     * @return A map of applicants by NRIC
+     */
+    public Map<String, Applicant> getAllApplicantsMap() {
+        List<Applicant> applicants = readAllApplicants();
+        Map<String, Applicant> applicantMap = new HashMap<>();
+        
+        for (Applicant app : applicants) {
+            applicantMap.put(app.getNric().trim(), app);
+        }
+        
+        System.out.println("DEBUG: getAllApplicantsMap returning " + applicantMap.size() + " applicants");
+        return applicantMap;
     }
 }

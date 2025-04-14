@@ -1,16 +1,13 @@
 package controller;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import controller.abstracts.ABaseController;
 import controller.interfaces.IEnquiryController;
 import datamanager.EnquiryDataManager;
 import enquiry.Enquiry;
-import enquiry.EnquiryEditor;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
 import model.Applicant;
 import model.HDBManager;
 import model.HDBOfficer;
@@ -18,28 +15,20 @@ import model.Project;
 
 /**
  * Controller for managing enquiries in the BTO Management System.
- * 
- * @author Your Name
- * @version 1.0
  */
 public class EnquiryController extends ABaseController implements IEnquiryController {
     
-    private Map<String, Enquiry> enquiryMap;
-    private Map<String, EnquiryEditor> editorMap;
     private ProjectController projectController;
     private EnquiryDataManager enquiryDataManager;
     
     /**
      * Constructor for EnquiryController.
-     * 
-     * @param projectController The project controller to use
-     * @param enquiryDataManager The enquiry data manager to use
      */
     public EnquiryController(ProjectController projectController, EnquiryDataManager enquiryDataManager) {
-        this.enquiryMap = new HashMap<>();
-        this.editorMap = new HashMap<>();
         this.projectController = projectController;
         this.enquiryDataManager = enquiryDataManager;
+        
+        System.out.println("DEBUG: EnquiryController initialized");
         
         // Load enquiries from data manager
         loadEnquiries();
@@ -49,372 +38,257 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
      * Loads enquiries from the data manager.
      */
     private void loadEnquiries() {
+        System.out.println("DEBUG: Loading enquiries via controller");
         List<Enquiry> enquiries = enquiryDataManager.loadEnquiries();
-        for (Enquiry enquiry : enquiries) {
-            enquiryMap.put(enquiry.getEnquiryId(), enquiry);
-            
-            // Add to project's enquiries if not already there
-            Project project = enquiry.getProject();
-            if (project != null) {
-                project.addEnquiry(enquiry);
-                
-                // Ensure we have an editor for this project
-                getOrCreateEditor(project);
+        System.out.println("DEBUG: Controller loaded " + enquiries.size() + " enquiries");
+    }
+    
+    @Override
+    public Enquiry createEnquiry(Applicant applicant, String projectName, String enquiryText) {
+        // Validate input
+        if (applicant == null) {
+            System.out.println("DEBUG: Cannot create enquiry - applicant is null");
+            return null;
+        }
+        
+        if (enquiryText == null || enquiryText.trim().isEmpty()) {
+            System.out.println("DEBUG: Cannot create enquiry - text is empty");
+            return null;
+        }
+        
+        System.out.println("DEBUG: Creating enquiry for applicant: " + applicant.getName() + 
+                          " about project: " + projectName);
+        
+        // Get project (optional)
+        Project project = null;
+        if (projectName != null && !projectName.trim().isEmpty()) {
+            project = projectController.getProjectById(projectName);
+            if (project == null) {
+                System.out.println("DEBUG: Project not found: " + projectName);
+                System.out.println("DEBUG: Creating enquiry without project reference");
+            } else {
+                System.out.println("DEBUG: Found project: " + project.getProjectName());
             }
         }
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Enquiry createEnquiry(Applicant applicant, String projectId, String enquiryText) {
-        // Validate input
-        if (!validateNotNull(applicant, "Applicant") || 
-            !validateNotNullOrEmpty(projectId, "Project ID") || 
-            !validateNotNullOrEmpty(enquiryText, "Enquiry Text")) {
-            return null;
-        }
         
-        // Get project
-        Project project = projectController.getProjectById(projectId);
-        if (project == null) {
-            System.out.println("Project not found");
-            return null;
-        }
-        
-        // Get or create editor for project
-        EnquiryEditor editor = getOrCreateEditor(project);
+        // Generate unique ID
+        String enquiryId = "ENQ-" + UUID.randomUUID().toString().substring(0, 8);
         
         // Create enquiry
-        Enquiry enquiry = (Enquiry) editor.create(enquiryText, applicant);
-        if (enquiry != null) {
-            // Add to map
-            enquiryMap.put(enquiry.getEnquiryId(), enquiry);
-            
-            // Save to data manager
-            enquiryDataManager.addEnquiry(enquiry);
-        }
+        Enquiry enquiry = new Enquiry(enquiryId, applicant, project, enquiryText, new Date());
         
-        return enquiry;
+        // Add to data manager
+        boolean added = enquiryDataManager.addEnquiry(enquiry);
+        
+        if (added) {
+            System.out.println("DEBUG: Enquiry added successfully: " + enquiryId);
+            return enquiry;
+        } else {
+            System.out.println("DEBUG: Failed to add enquiry to data manager");
+            return null;
+        }
     }
     
-    /**
-     * Helper method to get or create an enquiry editor for a project.
-     * 
-     * @param project The project to get an editor for
-     * @return The enquiry editor
-     */
-    private EnquiryEditor getOrCreateEditor(Project project) {
-        String projectId = project.getProjectName().toUpperCase();
-        
-        if (!editorMap.containsKey(projectId)) {
-            EnquiryEditor editor = new EnquiryEditor(project);
-            editorMap.put(projectId, editor);
-            return editor;
-        }
-        
-        return editorMap.get(projectId);
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean updateEnquiry(String enquiryId, String newEnquiryText, Applicant applicant) {
-        // Validate input
-        if (!validateNotNullOrEmpty(enquiryId, "Enquiry ID") || 
-            !validateNotNullOrEmpty(newEnquiryText, "New Enquiry Text") || 
-            !validateNotNull(applicant, "Applicant")) {
-            return false;
-        }
-        
-        // Get enquiry
-        Enquiry enquiry = enquiryMap.get(enquiryId);
+        // Find the enquiry
+        Enquiry enquiry = enquiryDataManager.getEnquiryById(enquiryId);
         if (enquiry == null) {
-            System.out.println("Enquiry not found");
+            System.out.println("DEBUG: Enquiry not found for update: " + enquiryId);
             return false;
         }
         
-        // Check if applicant is the owner of the enquiry
+        // Check ownership
         if (!enquiry.getApplicant().getNric().equals(applicant.getNric())) {
-            System.out.println("Unauthorized to update this enquiry");
+            System.out.println("DEBUG: Applicant does not own this enquiry");
             return false;
         }
         
-        // Get editor for project
-        EnquiryEditor editor = getOrCreateEditor(enquiry.getProject());
+        // Update the enquiry
+        enquiry.setEnquiryText(newEnquiryText);
         
-        // Update enquiry
-        boolean updated = editor.edit(enquiry, newEnquiryText);
-        
-        if (updated) {
-            // Update in data manager
-            enquiryDataManager.updateEnquiry(enquiry);
-        }
+        // Save changes
+        boolean updated = enquiryDataManager.updateEnquiry(enquiry);
+        System.out.println("DEBUG: Enquiry update result: " + updated);
         
         return updated;
     }
     
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean deleteEnquiry(String enquiryId, Applicant applicant) {
-        // Validate input
-        if (!validateNotNullOrEmpty(enquiryId, "Enquiry ID") || 
-            !validateNotNull(applicant, "Applicant")) {
-            return false;
-        }
-        
-        // Get enquiry
-        Enquiry enquiry = enquiryMap.get(enquiryId);
+        // Find the enquiry
+        Enquiry enquiry = enquiryDataManager.getEnquiryById(enquiryId);
         if (enquiry == null) {
-            System.out.println("Enquiry not found");
+            System.out.println("DEBUG: Enquiry not found for deletion: " + enquiryId);
             return false;
         }
         
-        // Check if applicant is the owner of the enquiry
+        // Check ownership
         if (!enquiry.getApplicant().getNric().equals(applicant.getNric())) {
-            System.out.println("Unauthorized to delete this enquiry");
+            System.out.println("DEBUG: Applicant does not own this enquiry");
             return false;
         }
         
-        // Get editor for project
-        EnquiryEditor editor = getOrCreateEditor(enquiry.getProject());
-        
-        // Delete enquiry
-        boolean deleted = editor.delete(enquiry);
-        
-        if (deleted) {
-            // Remove from map
-            enquiryMap.remove(enquiryId);
-            
-            // Remove from data manager
-            enquiryDataManager.deleteEnquiry(enquiryId);
-        }
+        // Delete the enquiry
+        boolean deleted = enquiryDataManager.deleteEnquiry(enquiryId);
+        System.out.println("DEBUG: Enquiry deletion result: " + deleted);
         
         return deleted;
     }
     
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean replyToEnquiryAsOfficer(String enquiryId, String replyText, HDBOfficer officer) {
-        // Validate input
-        if (!validateNotNullOrEmpty(enquiryId, "Enquiry ID") || 
-            !validateNotNullOrEmpty(replyText, "Reply Text") || 
-            !validateNotNull(officer, "Officer")) {
-            return false;
-        }
-        
-        // Get enquiry
-        Enquiry enquiry = enquiryMap.get(enquiryId);
+        // Find the enquiry
+        Enquiry enquiry = enquiryDataManager.getEnquiryById(enquiryId);
         if (enquiry == null) {
-            System.out.println("Enquiry not found");
+            System.out.println("DEBUG: Enquiry not found for reply: " + enquiryId);
             return false;
         }
         
-        // Get editor for project
-        EnquiryEditor editor = getOrCreateEditor(enquiry.getProject());
+        // Set the reply
+        enquiry.setReply(replyText);
         
-        // Reply to enquiry
-        boolean replied = officer.replyToEnquiry(enquiry, replyText, editor);
+        // Save changes
+        boolean updated = enquiryDataManager.updateEnquiry(enquiry);
+        System.out.println("DEBUG: Officer reply result: " + updated);
         
-        if (replied) {
-            // Update in data manager
-            enquiryDataManager.updateEnquiry(enquiry);
-        }
-        
-        return replied;
+        return updated;
     }
     
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean replyToEnquiryAsManager(String enquiryId, String replyText, HDBManager manager) {
-        // Validate input
-        if (!validateNotNullOrEmpty(enquiryId, "Enquiry ID") || 
-            !validateNotNullOrEmpty(replyText, "Reply Text") || 
-            !validateNotNull(manager, "Manager")) {
-            return false;
-        }
-        
-        // Get enquiry
-        Enquiry enquiry = enquiryMap.get(enquiryId);
+        // Find the enquiry
+        Enquiry enquiry = enquiryDataManager.getEnquiryById(enquiryId);
         if (enquiry == null) {
-            System.out.println("Enquiry not found");
+            System.out.println("DEBUG: Enquiry not found for reply: " + enquiryId);
             return false;
         }
         
-        // Get editor for project
-        EnquiryEditor editor = getOrCreateEditor(enquiry.getProject());
+        // Set the reply
+        enquiry.setReply(replyText);
         
-        // Reply to enquiry
-        boolean replied = manager.replyToEnquiry(enquiry, replyText, editor);
+        // Save changes
+        boolean updated = enquiryDataManager.updateEnquiry(enquiry);
+        System.out.println("DEBUG: Manager reply result: " + updated);
         
-        if (replied) {
-            // Update in data manager
-            enquiryDataManager.updateEnquiry(enquiry);
-        }
-        
-        return replied;
+        return updated;
     }
     
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Enquiry getEnquiryById(String enquiryId) {
-        if (!validateNotNullOrEmpty(enquiryId, "Enquiry ID")) {
-            return null;
-        }
-        
-        return enquiryMap.get(enquiryId);
+        return enquiryDataManager.getEnquiryById(enquiryId);
     }
     
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<Enquiry> getEnquiriesByApplicant(Applicant applicant) {
-        if (!validateNotNull(applicant, "Applicant")) {
+        if (applicant == null) {
+            System.out.println("DEBUG: Cannot get enquiries - applicant is null");
             return new ArrayList<>();
         }
         
-        return applicant.getEnquiries();
+        List<Enquiry> enquiries = applicant.getEnquiries();
+        System.out.println("DEBUG: Found " + enquiries.size() + " enquiries for applicant: " + 
+                           applicant.getName());
+        
+        return enquiries;
     }
     
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<Enquiry> getEnquiriesByProject(String projectId) {
-        if (!validateNotNullOrEmpty(projectId, "Project ID")) {
-            return new ArrayList<>();
-        }
-        
-        // Get project
-        Project project = projectController.getProjectById(projectId);
-        if (project == null) {
-            System.out.println("Project not found");
-            return new ArrayList<>();
-        }
-        
-        return project.getEnquiries();
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<Enquiry> getEnquiriesForOfficer(String projectId, HDBOfficer officer) {
-        if (!validateNotNullOrEmpty(projectId, "Project ID") || 
-            !validateNotNull(officer, "Officer")) {
+        if (projectId == null || officer == null) {
+            System.out.println("DEBUG: Invalid parameters for getEnquiriesForOfficer");
             return new ArrayList<>();
         }
         
-        // Get project
         Project project = projectController.getProjectById(projectId);
         if (project == null) {
-            System.out.println("Project not found");
+            System.out.println("DEBUG: Project not found: " + projectId);
             return new ArrayList<>();
         }
         
         // Check if officer is assigned to project
         if (!officer.isAssignedToProject(project)) {
-            System.out.println("Officer is not assigned to this project");
+            System.out.println("DEBUG: Officer not assigned to project: " + projectId);
             return new ArrayList<>();
         }
         
-        return project.getEnquiries();
+        List<Enquiry> enquiries = project.getEnquiries();
+        System.out.println("DEBUG: Found " + enquiries.size() + " enquiries for project: " + projectId);
+        
+        return enquiries;
     }
     
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<Enquiry> getAllEnquiriesForManager(HDBManager manager) {
-        if (!validateNotNull(manager, "Manager")) {
+        if (manager == null) {
+            System.out.println("DEBUG: Manager is null");
             return new ArrayList<>();
         }
         
-        // Get all projects managed by the manager
+        List<Enquiry> allEnquiries = new ArrayList<>();
+        
+        // Get all projects managed by this manager
         List<Project> managedProjects = projectController.getProjectsByManager(manager);
         
         // Collect all enquiries from these projects
-        List<Enquiry> allEnquiries = new ArrayList<>();
         for (Project project : managedProjects) {
             allEnquiries.addAll(project.getEnquiries());
         }
         
+        System.out.println("DEBUG: Found " + allEnquiries.size() + " enquiries for manager: " + 
+                           manager.getName());
+        
         return allEnquiries;
     }
     
-    /**
-     * {@inheritDoc}
-     */
+    @Override
+    public List<Enquiry> getEnquiriesByProject(String projectId) {
+        if (projectId == null) {
+            System.out.println("DEBUG: Project ID is null");
+            return new ArrayList<>();
+        }
+        
+        Project project = projectController.getProjectById(projectId);
+        if (project == null) {
+            System.out.println("DEBUG: Project not found: " + projectId);
+            return new ArrayList<>();
+        }
+        
+        List<Enquiry> enquiries = project.getEnquiries();
+        System.out.println("DEBUG: Found " + enquiries.size() + " enquiries for project: " + projectId);
+        
+        return enquiries;
+    }
+    
     @Override
     public List<Enquiry> getAnsweredEnquiries(String projectId) {
-        if (!validateNotNullOrEmpty(projectId, "Project ID")) {
-            return new ArrayList<>();
+        List<Enquiry> allEnquiries = getEnquiriesByProject(projectId);
+        List<Enquiry> answeredEnquiries = new ArrayList<>();
+        
+        for (Enquiry enquiry : allEnquiries) {
+            if (enquiry.isAnswered()) {
+                answeredEnquiries.add(enquiry);
+            }
         }
         
-        // Get project
-        Project project = projectController.getProjectById(projectId);
-        if (project == null) {
-            System.out.println("Project not found");
-            return new ArrayList<>();
-        }
+        System.out.println("DEBUG: Found " + answeredEnquiries.size() + " answered enquiries");
         
-        // Filter answered enquiries
-        return project.getEnquiries().stream()
-            .filter(Enquiry::isAnswered)
-            .collect(Collectors.toList());
+        return answeredEnquiries;
     }
     
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<Enquiry> getUnansweredEnquiries(String projectId) {
-        if (!validateNotNullOrEmpty(projectId, "Project ID")) {
-            return new ArrayList<>();
+        List<Enquiry> allEnquiries = getEnquiriesByProject(projectId);
+        List<Enquiry> unansweredEnquiries = new ArrayList<>();
+        
+        for (Enquiry enquiry : allEnquiries) {
+            if (!enquiry.isAnswered()) {
+                unansweredEnquiries.add(enquiry);
+            }
         }
         
-        // Get project
-        Project project = projectController.getProjectById(projectId);
-        if (project == null) {
-            System.out.println("Project not found");
-            return new ArrayList<>();
-        }
+        System.out.println("DEBUG: Found " + unansweredEnquiries.size() + " unanswered enquiries");
         
-        // Filter unanswered enquiries
-        return project.getEnquiries().stream()
-            .filter(e -> !e.isAnswered())
-            .collect(Collectors.toList());
-    }
-    
-    /**
-     * Saves all enquiries to the data manager.
-     * 
-     * @return true if all enquiries were successfully saved, false otherwise
-     */
-    public boolean saveAllEnquiries() {
-        return enquiryDataManager.saveEnquiries(new ArrayList<>(enquiryMap.values()));
-    }
-    
-    /**
-     * Reloads all enquiries from the data manager.
-     * 
-     * @return true if enquiries were successfully reloaded, false otherwise
-     */
-    public boolean reloadEnquiries() {
-        enquiryMap.clear();
-        editorMap.clear();
-        loadEnquiries();
-        return true;
+        return unansweredEnquiries;
     }
 }
