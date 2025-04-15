@@ -1,11 +1,10 @@
 package model;
 
+import enquiry.Enquiry;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import enquiry.Enquiry;
 import model.enums.FlatType;
 
 /**
@@ -64,86 +63,98 @@ public class Applicant extends User {
      * @param enquiry the enquiry to be added
      */
     public void addEnquiry(Enquiry enquiry) {
-        enquiries.add(enquiry);
+        if (enquiry != null) {
+            System.out.println("DEBUG: Adding enquiry " + enquiry.getEnquiryId() + 
+                              " to applicant " + getName());
+            enquiries.add(enquiry);
+            System.out.println("DEBUG: Applicant now has " + enquiries.size() + " enquiries");
+        }
     }
 
     /**
-     * Removes an enquiry from the set of enquiries made by the applicant.
-     *
-     * @param enquiry the enquiry to be removed
-     */
-    public void removeEnquiry(Enquiry enquiry) {
-        enquiries.remove(enquiry);
+    * Removes an enquiry from the set of enquiries made by the applicant.
+    *
+    * @param enquiry the enquiry to be removed
+    */
+public void removeEnquiry(Enquiry enquiry) {
+    if (enquiry != null) {
+        System.out.println("DEBUG: Removing enquiry " + enquiry.getEnquiryId() + 
+                        " from applicant " + getName());
+        boolean removed = enquiries.remove(enquiry);
+        System.out.println("DEBUG: Removal result: " + removed);
     }
+}
 
-    /**
-     * Gets a list of enquiries made by the applicant.
-     *
-     * @return a list of enquiries made by the applicant
-     */
-    public List<Enquiry> getEnquiries() {
-        return new ArrayList<>(enquiries);
-    }
-    
-    /**
-     * Gets an enquiry by its ID.
-     * 
-     * @param enquiryId The ID of the enquiry to retrieve
-     * @return The enquiry with the specified ID, or null if not found
-     */
-    public Enquiry getEnquiryById(String enquiryId) {
-        for (Enquiry enquiry : enquiries) {
-            if (enquiry.getEnquiryId().equals(enquiryId)) {
-                return enquiry;
-            }
+/**
+ * Gets a list of enquiries made by the applicant.
+ *
+ * @return a list of enquiries made by the applicant
+ */
+public List<Enquiry> getEnquiries() {
+    System.out.println("DEBUG: Getting enquiries for applicant " + getName() + 
+                    ", count: " + enquiries.size());
+    return new ArrayList<>(enquiries);
+}
+
+/**
+ * Gets an enquiry by its ID.
+ * 
+ * @param enquiryId The ID of the enquiry to retrieve
+ * @return The enquiry with the specified ID, or null if not found
+ */
+public Enquiry getEnquiryById(String enquiryId) {
+    for (Enquiry enquiry : enquiries) {
+        if (enquiry.getEnquiryId().equals(enquiryId)) {
+            return enquiry;
         }
-        return null;
+    }
+    return null;
+}
+
+// Getters and Setters
+
+public Application getCurrentApplication() {
+    return currentApplication;
+}
+
+public void setCurrentApplication(Application currentApplication) {
+    this.currentApplication = currentApplication;
+}
+
+public FlatType getBookedFlatType() {
+    return bookedFlatType;
+}
+
+public void setBookedFlatType(FlatType bookedFlatType) {
+    this.bookedFlatType = bookedFlatType;
+}
+
+public Project getBookedProject() {
+    return bookedProject;
+}
+
+public void setBookedProject(Project bookedProject) {
+    this.bookedProject = bookedProject;
+}
+
+/**
+ * Returns a string representation of the Applicant.
+ * 
+ * @return A string with the applicant's details
+ */
+@Override
+public String toString() {
+    StringBuilder sb = new StringBuilder(super.toString());
+    
+    if (currentApplication != null) {
+        sb.append(", Current Application: ").append(currentApplication.getApplicationId());
     }
     
-    // Getters and Setters
-    
-    public Application getCurrentApplication() {
-        return currentApplication;
+    if (bookedProject != null && bookedFlatType != null) {
+        sb.append(", Booked: ").append(bookedProject.getProjectName())
+        .append(" (").append(bookedFlatType.getDisplayName()).append(")");
     }
     
-    public void setCurrentApplication(Application currentApplication) {
-        this.currentApplication = currentApplication;
-    }
-    
-    public FlatType getBookedFlatType() {
-        return bookedFlatType;
-    }
-    
-    public void setBookedFlatType(FlatType bookedFlatType) {
-        this.bookedFlatType = bookedFlatType;
-    }
-    
-    public Project getBookedProject() {
-        return bookedProject;
-    }
-    
-    public void setBookedProject(Project bookedProject) {
-        this.bookedProject = bookedProject;
-    }
-    
-    /**
-     * Returns a string representation of the Applicant.
-     * 
-     * @return A string with the applicant's details
-     */
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder(super.toString());
-        
-        if (currentApplication != null) {
-            sb.append(", Current Application: ").append(currentApplication.getApplicationId());
-        }
-        
-        if (bookedProject != null && bookedFlatType != null) {
-            sb.append(", Booked: ").append(bookedProject.getProjectName())
-              .append(" (").append(bookedFlatType.getDisplayName()).append(")");
-        }
-        
-        return sb.toString();
-    }
+    return sb.toString();
+}
 }

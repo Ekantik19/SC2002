@@ -1,7 +1,6 @@
 package model;
 
 import java.util.Date;
-
 import model.abstracts.AApplication;
 import model.enums.ApplicationStatus;
 import model.enums.FlatType;
@@ -24,7 +23,33 @@ public class Application extends AApplication {
      * @param selectedFlatType The type of flat selected by the applicant
      */
     public Application(String applicationId, Applicant applicant, Project project, FlatType selectedFlatType) {
-        super(applicationId, applicant, project, selectedFlatType);
+        super(applicationId != null ? applicationId : generateId(applicant, project), 
+              applicant, project, selectedFlatType);
+        
+        System.out.println("DEBUG: Created application with ID: " + getApplicationId());
+    }
+    
+    /**
+     * Generates a unique application ID based on applicant NRIC and project name.
+     * 
+     * @param applicant The applicant
+     * @param project The project
+     * @return A generated application ID
+     */
+    private static String generateId(Applicant applicant, Project project) {
+        if (applicant != null && project != null) {
+            String nricPart = applicant.getNric().substring(1, 8);
+            String projectPart = project.getProjectName()
+                .substring(0, Math.min(3, project.getProjectName().length()))
+                .toUpperCase();
+            
+            String newId = "APP-" + nricPart + "-" + projectPart;
+            System.out.println("DEBUG: Generated application ID: " + newId);
+            return newId;
+        } else {
+            System.out.println("DEBUG: Cannot generate application ID - missing applicant or project");
+            return "APP-UNKNOWN";
+        }
     }
     
     /**

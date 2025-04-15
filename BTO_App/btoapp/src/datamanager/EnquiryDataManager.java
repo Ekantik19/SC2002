@@ -2,7 +2,9 @@ package datamanager;
 
 import enquiry.Enquiry;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -19,8 +21,8 @@ public class EnquiryDataManager extends DataManager {
     
     private static final String DELIMITER = "\t";
     private Map<String, Enquiry> enquiryMap;
-    private List<Applicant> applicantsList; // Use a list instead of a map
-    private List<Project> projectsList;     // Use a list instead of a map
+    private List<Applicant> applicantsList;
+    private List<Project> projectsList;
     private String filePath;
     
     public EnquiryDataManager(Map<String, Applicant> applicantsMap, Map<String, Project> projectsMap) {
@@ -85,25 +87,12 @@ public class EnquiryDataManager extends DataManager {
                 lineCount++;
                 System.out.println("DEBUG: Processing enquiry line " + lineCount + ": " + line);
                 
-                // Print each character's code point for debugging
-                System.out.print("DEBUG: Character codes: ");
-                for (int i = 0; i < Math.min(line.length(), 20); i++) {
-                    char c = line.charAt(i);
-                    System.out.print((int)c + " ");
-                }
-                System.out.println();
-                
                 try {
                     String[] parts;
                     if (line.contains("\t")) {
                         parts = line.split("\t");
                     } else {
                         parts = line.split("\\s{2,}");
-                    }
-                    
-                    System.out.println("DEBUG: Split into " + parts.length + " parts");
-                    for (int i = 0; i < parts.length; i++) {
-                        System.out.println("DEBUG: Part " + i + ": '" + parts[i] + "'");
                     }
                     
                     Enquiry enquiry = parseEnquiryFromLine(parts);
@@ -147,9 +136,6 @@ public class EnquiryDataManager extends DataManager {
             Applicant applicant = findApplicantInList(applicantNric);
             if (applicant == null) {
                 System.out.println("DEBUG: Applicant not found using list lookup: " + applicantNric);
-                // Emergency fallback: Create a temporary applicant for testing
-                // DO NOT use this in production!
-                // applicant = new Applicant(applicantNric, "Temporary", "password", 30, false);
                 return null;
             }
             
@@ -159,7 +145,6 @@ public class EnquiryDataManager extends DataManager {
                 project = findProjectInList(projectName);
                 if (project == null) {
                     System.out.println("DEBUG: Project not found: " + projectName);
-                    // For testing, we can proceed without a project
                 }
             }
             
@@ -199,7 +184,6 @@ public class EnquiryDataManager extends DataManager {
         }
     }
     
-    // Use linear search in list instead of map lookup
     private Applicant findApplicantInList(String nric) {
         if (nric == null) return null;
         
@@ -228,19 +212,6 @@ public class EnquiryDataManager extends DataManager {
                 System.out.println("DEBUG: Found applicant (case-insensitive): " + app.getName());
                 return app;
             }
-            
-            // Debug - print character codes for comparison
-            System.out.print("DEBUG: NRIC codes from file: ");
-            for (char c : normalizedNric.toCharArray()) {
-                System.out.print((int)c + " ");
-            }
-            System.out.println();
-            
-            System.out.print("DEBUG: NRIC codes from object: ");
-            for (char c : appNric.toCharArray()) {
-                System.out.print((int)c + " ");
-            }
-            System.out.println();
         }
         
         System.out.println("DEBUG: No applicant found with NRIC: " + normalizedNric);
@@ -273,25 +244,109 @@ public class EnquiryDataManager extends DataManager {
         return null;
     }
     
-    // Rest of the methods remain the same
     public boolean saveEnquiries(List<Enquiry> enquiries) {
-        // Implementation remains the same
-        return true;
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+            // Write header
+            writer.write("Enquiry ID\tApplicant NRIC\tProject Name\tEnquiry Text\tTimestamp\tStatus\tResponder\tReply");
+            writer.newLine();
+            
+            // Write enquiry data
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+            
+            for (Enquiry enquiry : enquiries) {
+                writer.write(enquiry.getEnquiryId() + DELIMITER);
+                writer.write(enquiry.getApplicant().getNric() + DELIMITER);
+                
+                // Project name (may be null)
+                if (enquiry.getProject() != null) {
+                    writer.write(enquiry.getProject().getProjectName());
+                }
+                writer.write(DELIMITER);
+                
+                // Enquiry text
+                writer.write(enquiry.getEnquiryText() + DELIMITER);
+                
+                // Timestamp
+                writer.write(dateFormat.format(enquiry.getSubmissionDate()) + DELIMITER);
+                
+                // Status
+                writer.write((enquiry.isAnswered() ? "Responded" : "Open") + DELIMITER);
+                
+                // Responder and Reply (if any)
+                if (enquiry.isAnswered()) {
+                    writer.write("System" + DELIMITER); // Default responder
+                    writer.write(enquiry.getReply());
+                }
+                
+                writer.newLine();
+            }
+            
+            System.out.println("DEBUG: Saved " + enquiries.size() + " enquiries to file");
+            return true;
+        } catch (IOException e) {
+            System.out.println("Error saving enquiry data: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
     
     public boolean addEnquiry(Enquiry enquiry) {
-        // Implementation remains the same
-        return true;
+        if (enquiry == null || enquiry.getEnquiryId() == null) {
+            System.out.println("DEBUG: Cannot add null enquiry or enquiry with null ID");
+            return false;
+        }
+        
+        enquiryMap.put(enquiry.getEnquiryId(), enquiry);
+        
+        // Ensure enquiry is associated with applicant
+        enquiry.getApplicant().addEnquiry(enquiry);
+        
+        // Ensure enquiry is associated with project if applicable
+        if (enquiry.getProject() != null) {
+            enquiry.getProject().addEnquiry(enquiry);
+        }
+        
+        System.out.println("DEBUG: Added enquiry to map: " + enquiry.getEnquiryId());
+        
+        // Save to file
+        return saveEnquiries(getAllEnquiries());
     }
     
     public boolean updateEnquiry(Enquiry enquiry) {
-        // Implementation remains the same
-        return true;
+        if (enquiry == null || enquiry.getEnquiryId() == null) {
+            return false;
+        }
+        
+        if (!enquiryMap.containsKey(enquiry.getEnquiryId())) {
+            return false;
+        }
+        
+        enquiryMap.put(enquiry.getEnquiryId(), enquiry);
+        
+        // Save to file
+        return saveEnquiries(getAllEnquiries());
     }
     
     public boolean deleteEnquiry(String enquiryId) {
-        // Implementation remains the same
-        return true;
+        if (enquiryId == null || !enquiryMap.containsKey(enquiryId)) {
+            return false;
+        }
+        
+        Enquiry enquiry = enquiryMap.get(enquiryId);
+        
+        // Remove from applicant
+        enquiry.getApplicant().removeEnquiry(enquiry);
+        
+        // Remove from project if applicable
+        if (enquiry.getProject() != null) {
+            enquiry.getProject().removeEnquiry(enquiry);
+        }
+        
+        // Remove from map
+        enquiryMap.remove(enquiryId);
+        
+        // Save to file
+        return saveEnquiries(getAllEnquiries());
     }
     
     public Enquiry getEnquiryById(String enquiryId) {
@@ -304,11 +359,21 @@ public class EnquiryDataManager extends DataManager {
     
     public List<Enquiry> getEnquiriesByApplicant(String applicantNric) {
         List<Enquiry> result = new ArrayList<>();
+        
+        System.out.println("DEBUG: Getting enquiries for applicant NRIC: " + applicantNric);
+        
         for (Enquiry enquiry : enquiryMap.values()) {
-            if (enquiry.getApplicant().getNric().equals(applicantNric)) {
+            String enquiryApplicantNric = enquiry.getApplicant().getNric();
+            System.out.println("DEBUG: Checking enquiry " + enquiry.getEnquiryId() + 
+                              " with applicant NRIC: " + enquiryApplicantNric);
+            
+            if (enquiryApplicantNric.equals(applicantNric)) {
                 result.add(enquiry);
+                System.out.println("DEBUG: Added enquiry to result: " + enquiry.getEnquiryId());
             }
         }
+        
+        System.out.println("DEBUG: Found " + result.size() + " enquiries for applicant: " + applicantNric);
         return result;
     }
     

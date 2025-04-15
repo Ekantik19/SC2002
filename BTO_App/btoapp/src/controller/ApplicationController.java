@@ -1,13 +1,12 @@
 package controller;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import controller.abstracts.ABaseController;
 import controller.interfaces.IApplicationController;
 import datamanager.ApplicantDataManager;
 import datamanager.ApplicationDataManager;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import model.Applicant;
 import model.Application;
 import model.HDBManager;
@@ -44,27 +43,57 @@ public class ApplicationController extends ABaseController implements IApplicati
     
     @Override
     public Application submitApplication(Applicant applicant, Project project, FlatType flatType) {
+        System.out.println("DEBUG: Starting application submission for " + applicant.getName());
+        
         // Validate input parameters
         if (!validateInputForSubmission(applicant, project, flatType)) {
+            System.out.println("DEBUG: Input validation failed");
             return null;
         }
         
-        // Create new application
-        Application application = new Application(null, applicant, project, flatType);
+        System.out.println("DEBUG: Input validation passed");
+        
+        // Create new application with a generated ID
+        System.out.println("DEBUG: Creating application object");
+        String applicationId = generateApplicationId(applicant.getNric(), project.getProjectName());
+        Application application = new Application(applicationId, applicant, project, flatType);
+        
+        System.out.println("DEBUG: Application object created with ID: " + application.getApplicationId());
         
         // Add to data manager
-        if (applicationDataManager.addApplication(application)) {
+        System.out.println("DEBUG: Adding application to data manager");
+        boolean added = applicationDataManager.addApplication(application);
+        System.out.println("DEBUG: Data manager result: " + (added ? "success" : "failed"));
+        
+        if (added) {
             // Update applicant's current application
+            System.out.println("DEBUG: Updating applicant's current application");
             applicant.setCurrentApplication(application);
-            applicantDataManager.updateApplicant(applicant);
+            boolean applicantUpdated = applicantDataManager.updateApplicant(applicant);
+            System.out.println("DEBUG: Applicant update result: " + (applicantUpdated ? "success" : "failed"));
             
             // Add application to project
+            System.out.println("DEBUG: Adding application to project");
             project.addApplication(application);
             
             return application;
         }
         
+        System.out.println("DEBUG: Application submission failed");
         return null;
+    }
+    
+    /**
+     * Generates an application ID based on NRIC and project name.
+     * 
+     * @param nric The applicant's NRIC
+     * @param projectName The project name
+     * @return A unique application ID
+     */
+    private String generateApplicationId(String nric, String projectName) {
+        String nricPart = nric.substring(1, 8);
+        String projectPart = projectName.substring(0, Math.min(3, projectName.length())).toUpperCase();
+        return "APP-" + nricPart + "-" + projectPart;
     }
     
     @Override
@@ -240,27 +269,36 @@ public class ApplicationController extends ABaseController implements IApplicati
      */
     private boolean validateInputForSubmission(Applicant applicant, Project project, FlatType flatType) {
         // Validate input parameters
-        if (!validateNotNull(applicant, "Applicant") || 
-            !validateNotNull(project, "Project") ||
-            !validateNotNull(flatType, "Flat Type")) {
+        if (!validateNotNull(applicant, "Applicant")) {
+            System.out.println("DEBUG: Applicant is null");
+            return false;
+        }
+        
+        if (!validateNotNull(project, "Project")) {
+            System.out.println("DEBUG: Project is null");
+            return false;
+        }
+        
+        if (!validateNotNull(flatType, "Flat Type")) {
+            System.out.println("DEBUG: Flat Type is null");
             return false;
         }
         
         // Check if the applicant already has an active application
         if (applicant.hasActiveApplication()) {
-            System.out.println("Applicant already has an active application.");
+            System.out.println("DEBUG: Applicant already has an active application.");
             return false;
         }
         
         // Check if project is open for applications
         if (!project.isOpenForApplications()) {
-            System.out.println("Project is not currently open for applications.");
+            System.out.println("DEBUG: Project is not currently open for applications.");
             return false;
         }
         
         // Check applicant eligibility for the flat type
         if (!eligibilityService.isEligibleForFlatType(applicant, flatType)) {
-            System.out.println("Applicant is not eligible for the selected flat type.");
+            System.out.println("DEBUG: Applicant is not eligible for the selected flat type.");
             return false;
         }
         
@@ -269,10 +307,11 @@ public class ApplicationController extends ABaseController implements IApplicati
                 .anyMatch(info -> info.getFlatType() == flatType);
         
         if (!flatTypeAvailable) {
-            System.out.println("Selected flat type is not available in this project.");
+            System.out.println("DEBUG: Selected flat type is not available in this project.");
             return false;
         }
         
+        System.out.println("DEBUG: All validation checks passed");
         return true;
     }
     

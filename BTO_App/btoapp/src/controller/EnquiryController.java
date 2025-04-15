@@ -81,6 +81,17 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         boolean added = enquiryDataManager.addEnquiry(enquiry);
         
         if (added) {
+            // Explicitly add to applicant's list
+            applicant.addEnquiry(enquiry);
+            
+            // Add to project if available
+            if (project != null) {
+                project.addEnquiry(enquiry);
+            }
+            
+            // Save all enquiries to ensure persistence
+            enquiryDataManager.saveEnquiries(enquiryDataManager.getAllEnquiries());
+            
             System.out.println("DEBUG: Enquiry added successfully: " + enquiryId);
             return enquiry;
         } else {
@@ -111,6 +122,11 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         boolean updated = enquiryDataManager.updateEnquiry(enquiry);
         System.out.println("DEBUG: Enquiry update result: " + updated);
         
+        if (updated) {
+            // Save all enquiries to ensure persistence
+            enquiryDataManager.saveEnquiries(enquiryDataManager.getAllEnquiries());
+        }
+        
         return updated;
     }
     
@@ -129,9 +145,22 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
             return false;
         }
         
+        // Remove from applicant's list
+        applicant.removeEnquiry(enquiry);
+        
+        // Remove from project if applicable
+        if (enquiry.getProject() != null) {
+            enquiry.getProject().removeEnquiry(enquiry);
+        }
+        
         // Delete the enquiry
         boolean deleted = enquiryDataManager.deleteEnquiry(enquiryId);
         System.out.println("DEBUG: Enquiry deletion result: " + deleted);
+        
+        if (deleted) {
+            // Save all enquiries to ensure persistence
+            enquiryDataManager.saveEnquiries(enquiryDataManager.getAllEnquiries());
+        }
         
         return deleted;
     }
@@ -152,6 +181,11 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         boolean updated = enquiryDataManager.updateEnquiry(enquiry);
         System.out.println("DEBUG: Officer reply result: " + updated);
         
+        if (updated) {
+            // Save all enquiries to ensure persistence
+            enquiryDataManager.saveEnquiries(enquiryDataManager.getAllEnquiries());
+        }
+        
         return updated;
     }
     
@@ -171,6 +205,11 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         boolean updated = enquiryDataManager.updateEnquiry(enquiry);
         System.out.println("DEBUG: Manager reply result: " + updated);
         
+        if (updated) {
+            // Save all enquiries to ensure persistence
+            enquiryDataManager.saveEnquiries(enquiryDataManager.getAllEnquiries());
+        }
+        
         return updated;
     }
     
@@ -186,11 +225,36 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
             return new ArrayList<>();
         }
         
-        List<Enquiry> enquiries = applicant.getEnquiries();
-        System.out.println("DEBUG: Found " + enquiries.size() + " enquiries for applicant: " + 
-                           applicant.getName());
+        // Refresh from data manager to ensure we have the latest
+        System.out.println("DEBUG: Getting enquiries for applicant: " + applicant.getName() + 
+                          " (NRIC: " + applicant.getNric() + ")");
         
-        return enquiries;
+        List<Enquiry> enquiries = enquiryDataManager.getEnquiriesByApplicant(applicant.getNric());
+        System.out.println("DEBUG: Found " + enquiries.size() + " enquiries for applicant in data manager");
+        
+        // Merge with applicant's own list to ensure completeness
+        List<Enquiry> applicantEnquiries = applicant.getEnquiries();
+        System.out.println("DEBUG: Applicant's own list has " + applicantEnquiries.size() + " enquiries");
+        
+        // Combine the two sources (avoid duplicates)
+        List<Enquiry> result = new ArrayList<>(enquiries);
+        for (Enquiry enquiry : applicantEnquiries) {
+            if (!containsEnquiry(result, enquiry.getEnquiryId())) {
+                result.add(enquiry);
+            }
+        }
+        
+        System.out.println("DEBUG: Returning " + result.size() + " enquiries for applicant");
+        return result;
+    }
+    
+    private boolean containsEnquiry(List<Enquiry> enquiries, String enquiryId) {
+        for (Enquiry e : enquiries) {
+            if (e.getEnquiryId().equals(enquiryId)) {
+                return true;
+            }
+        }
+        return false;
     }
     
     @Override
