@@ -1,20 +1,15 @@
 package view;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import controller.ApplicationController;
 import controller.EnquiryController;
+import controller.ManagerController;
 import controller.ProjectController;
+import java.util.HashMap;
+import java.util.Map;
 import model.Applicant;
 import model.HDBManager;
 import model.HDBOfficer;
 import model.User;
-import view.ApplicationView;
-import view.EnquiryView;
-import view.PasswordChangeView;
-import view.ProjectView;
-import view.ReportView;
 import view.menu.*;
 
 /**
@@ -25,6 +20,7 @@ public class MenuNavigator {
     private ProjectController projectController;
     private ApplicationController applicationController;
     private EnquiryController enquiryController;
+    private ManagerController managerController;
     
     private Map<Integer, MenuAction> applicantActions;
     private Map<Integer, MenuAction> officerActions;
@@ -41,15 +37,18 @@ public class MenuNavigator {
     public MenuNavigator(User currentUser, 
                          ProjectController projectController,
                          ApplicationController applicationController,
-                         EnquiryController enquiryController) {
+                         EnquiryController enquiryController,
+                         ManagerController managerController) {
         this.currentUser = currentUser;
         this.projectController = projectController;
         this.applicationController = applicationController;
         this.enquiryController = enquiryController;
+        this.managerController=managerController;
         
         // Initialize view instances
-        ProjectView projectView = new ProjectView(currentUser, projectController, applicationController);
-        ApplicationView applicationView = new ApplicationView(currentUser, applicationController);
+        ProjectView projectView = new ProjectView(currentUser, projectController, applicationController,managerController);
+        //ApplicationView applicationView = new ApplicationView(currentUser, applicationController);
+        ApplicationView applicationView = new ApplicationView(currentUser, applicationController, projectController);
         EnquiryView enquiryView = new EnquiryView(currentUser, enquiryController, projectController);
         PasswordChangeView passwordView = new PasswordChangeView(currentUser);
         

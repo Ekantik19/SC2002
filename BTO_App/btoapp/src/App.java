@@ -1,13 +1,5 @@
-import controller.ApplicationController;
-import controller.AuthenticationController;
-import controller.EnquiryController;
-import controller.ProjectController;
-import datamanager.ApplicantDataManager;
-import datamanager.ApplicationDataManager;
-import datamanager.EnquiryDataManager;
-import datamanager.ManagerDataManager;
-import datamanager.OfficerDataManager;
-import datamanager.ProjectDataManager;
+import controller.*;
+import datamanager.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +26,7 @@ public class App {
     private ProjectController projectController;
     private ApplicationController applicationController;
     private EnquiryController enquiryController;
+    private ManagerController managerController;
 
     /**
      * Constructor initializes application components.
@@ -143,6 +136,13 @@ public class App {
             // Step 8: Initialize EnquiryController
             System.out.println("DEBUG: Initializing EnquiryController...");
             enquiryController = new EnquiryController(projectController, enquiryDataManager);
+
+            System.out.println("DEBUG: Initializing ManagerController...");
+            managerController = new ManagerController(
+                managerDataManager, 
+                projectDataManager,
+                officerDataManager
+            );
             
             System.out.println("DEBUG: Initialization complete");
         } catch (Exception e) {
@@ -220,7 +220,8 @@ public class App {
                 currentUser, 
                 projectController, 
                 applicationController, 
-                enquiryController
+                enquiryController,
+                managerController
             );
             mainMenuView.display();
         }

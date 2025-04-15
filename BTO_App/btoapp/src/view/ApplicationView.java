@@ -1,12 +1,11 @@
 package view;
 
+import controller.ApplicationController;
+import controller.ProjectController;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-
-import controller.ApplicationController;
-import controller.ProjectController;
 import model.Applicant;
 import model.Application;
 import model.HDBManager;
@@ -34,11 +33,18 @@ public class ApplicationView extends ARenderView implements IBTOView {
      * @param currentUser The currently logged-in user
      * @param applicationController Controller for application operations
      */
-    public ApplicationView(User currentUser, ApplicationController applicationController) {
-        this.currentUser = currentUser;
-        this.applicationController = applicationController;
-        this.scanner = new Scanner(System.in);
-    }
+    // public ApplicationView(User currentUser, ApplicationController applicationController) {
+    //     this.currentUser = currentUser;
+    //     this.applicationController = applicationController;
+    //     this.scanner = new Scanner(System.in);
+    // }
+    public ApplicationView(User currentUser, ApplicationController applicationController, 
+                      ProjectController projectController) {
+    this.currentUser = currentUser;
+    this.applicationController = applicationController;
+    this.projectController = projectController;
+    this.scanner = new Scanner(System.in);
+}
     
     @Override
     public void display() {

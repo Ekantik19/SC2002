@@ -1,12 +1,9 @@
 package view;
 
+import controller.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
-
-import controller.ApplicationController;
-import controller.EnquiryController;
-import controller.ProjectController;
 import model.User;
 import view.abstracts.ARenderView;
 import view.interfaces.IBTOView;
@@ -40,7 +37,8 @@ public class MainMenuView extends ARenderView implements IBTOView {
     public MainMenuView(User currentUser, 
                        ProjectController projectController,
                        ApplicationController applicationController,
-                       EnquiryController enquiryController) {
+                       EnquiryController enquiryController,
+                       ManagerController managerController) {
         this.currentUser = currentUser;
         this.scanner = new Scanner(System.in);
         
@@ -52,7 +50,8 @@ public class MainMenuView extends ARenderView implements IBTOView {
             currentUser, 
             projectController, 
             applicationController, 
-            enquiryController
+            enquiryController,
+            managerController
         );
         
         // Build menu actions

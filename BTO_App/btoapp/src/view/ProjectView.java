@@ -1,15 +1,14 @@
 package view;
 
+import controller.ApplicationController;
+import controller.ManagerController;
+import controller.ProjectController;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
-
-import controller.ApplicationController;
-import controller.ManagerController;
-import controller.ProjectController;
 import model.Applicant;
 import model.Application;
 import model.HDBManager;
@@ -39,12 +38,15 @@ public class ProjectView extends ARenderView implements IBTOView {
      * @param applicationController Controller for application operations
      */
     public ProjectView(User currentUser, ProjectController projectController, 
-                      ApplicationController applicationController) {
-        this.currentUser = currentUser;
-        this.projectController = projectController;
-        this.applicationController = applicationController;
-        this.scanner = new Scanner(System.in);
+        ApplicationController applicationController,
+        ManagerController managerController) {
+            this.currentUser = currentUser;
+            this.projectController = projectController;
+            this.applicationController = applicationController;
+            this.managerController = managerController;
+            this.scanner = new Scanner(System.in);
     }
+
     
     @Override
     public void display() {
