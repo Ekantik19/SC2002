@@ -362,6 +362,18 @@ public class ProjectController extends ABaseController implements IProjectContro
     
     @Override
     public List<Project> getVisibleProjectsForApplicant(Applicant applicant) {
+
+        // For HDB Officers, print debug info about their assignments
+    if (applicant instanceof HDBOfficer) {
+        HDBOfficer officer = (HDBOfficer) applicant;
+        System.out.println("DEBUG: Officer check - Name: " + officer.getName());
+        System.out.println("DEBUG: Officer check - Assigned project: " + 
+                        (officer.getAssignedProject() != null ? 
+                        officer.getAssignedProject().getProjectName() : "none"));
+        System.out.println("DEBUG: Officer check - Registration approved: " + 
+                        officer.isRegistrationApproved());
+    }
+
         // Validate input
         if (applicant == null) {
             System.out.println("DEBUG: getVisibleProjectsForApplicant received null applicant");
@@ -384,6 +396,15 @@ public class ProjectController extends ABaseController implements IProjectContro
         
         for (Project project : allProjects) {
             System.out.println("\nDEBUG: Checking eligibility for project: " + project.getProjectName());
+            
+            // Check if applicant is an officer handling this project
+            if (applicant instanceof HDBOfficer) {
+                HDBOfficer officer = (HDBOfficer) applicant;
+                if (officer.isAssignedToProject(project)) {
+                    System.out.println("DEBUG: Project failed officer eligibility check - Officer is handling this project");
+                    continue;
+                }
+            }
             
             // Check visibility
             if (!project.isVisible()) {

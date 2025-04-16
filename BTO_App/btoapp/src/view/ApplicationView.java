@@ -33,11 +33,6 @@ public class ApplicationView extends ARenderView implements IBTOView {
      * @param currentUser The currently logged-in user
      * @param applicationController Controller for application operations
      */
-    // public ApplicationView(User currentUser, ApplicationController applicationController) {
-    //     this.currentUser = currentUser;
-    //     this.applicationController = applicationController;
-    //     this.scanner = new Scanner(System.in);
-    // }
     public ApplicationView(User currentUser, ApplicationController applicationController, 
                       ProjectController projectController) {
     this.currentUser = currentUser;
@@ -282,32 +277,57 @@ public class ApplicationView extends ARenderView implements IBTOView {
             return;
         }
         
-        printHeader("PROCESS FLAT BOOKING");
+        Project project = officer.getAssignedProject();
+        printHeader("PROCESS FLAT BOOKING: " + project.getProjectName());
         
-        System.out.print("Enter applicant's NRIC: ");
-        String nric = scanner.nextLine();
+        // First, show all SUCCESSFUL applications for the project
+        List<Application> successfulApplications = applicationController.getApplicationsByStatus(
+            project, ApplicationStatus.SUCCESSFUL);
         
-        Application application = officer.retrieveApplicationByNric(nric);
-        
-        if (application == null) {
-            showError("No application found for the specified NRIC in your project.");
+        if (successfulApplications.isEmpty()) {
+            showMessage("No successful applications found that are eligible for booking.");
             return;
         }
         
-        if (application.getStatus() != ApplicationStatus.SUCCESSFUL) {
-            showError("Application status must be SUCCESSFUL to process booking. Current status: " +
-                     application.getStatus().getDisplayName());
+        System.out.println("The following applications are eligible for booking:");
+        System.out.println("ID | Applicant Name | NRIC | Flat Type | Application Date");
+        System.out.println("-----------------------------------------------------------");
+        
+        int index = 1;
+        for (Application app : successfulApplications) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+            System.out.printf("%2d | %-20s | %-12s | %-10s | %s\n",
+                            index++, 
+                            app.getApplicant().getName(),
+                            app.getApplicant().getNric(),
+                            app.getSelectedFlatType().getDisplayName(),
+                            dateFormat.format(app.getApplicationDate()));
+        }
+        
+        // Ask which application to process
+        System.out.print("\nEnter the number of the application to process (1-" + 
+                        successfulApplications.size() + "), or 0 to cancel: ");
+        int choice = getIntInput();
+        
+        if (choice <= 0 || choice > successfulApplications.size()) {
+            showMessage("Operation cancelled.");
             return;
         }
+        
+        Application selectedApplication = successfulApplications.get(choice - 1);
         
         // Display application details
-        displayApplicationDetails(application);
+        displayApplicationDetails(selectedApplication);
         
-        System.out.println("\nAre you sure you want to process a flat booking for this application? (Y/N)");
-        String confirm = scanner.nextLine();
+        // Confirm booking
+        System.out.println("\nOptions:");
+        System.out.println("1. Process Flat Booking");
+        System.out.println("2. Cancel");
+        System.out.print("\nEnter your choice (1-2): ");
+        int bookingChoice = getIntInput();
         
-        if (confirm.equalsIgnoreCase("Y")) {
-            boolean booked = officer.bookFlat(application);
+        if (bookingChoice == 1) {
+            boolean booked = officer.bookFlat(selectedApplication);
             
             if (booked) {
                 showMessage("Flat booking processed successfully.");
@@ -336,26 +356,47 @@ public class ApplicationView extends ARenderView implements IBTOView {
             return;
         }
         
-        printHeader("GENERATE BOOKING RECEIPT");
+        Project project = officer.getAssignedProject();
+        printHeader("GENERATE BOOKING RECEIPT: " + project.getProjectName());
         
-        System.out.print("Enter applicant's NRIC: ");
-        String nric = scanner.nextLine();
+        // Get all BOOKED applications for the project
+        List<Application> bookedApplications = applicationController.getApplicationsByStatus(
+            project, ApplicationStatus.BOOKED);
         
-        Application application = officer.retrieveApplicationByNric(nric);
-        
-        if (application == null) {
-            showError("No application found for the specified NRIC in your project.");
+        if (bookedApplications.isEmpty()) {
+            showMessage("No booked applications found for receipt generation.");
             return;
         }
         
-        if (application.getStatus() != ApplicationStatus.BOOKED) {
-            showError("Application status must be BOOKED to generate a receipt. Current status: " +
-                     application.getStatus().getDisplayName());
+        System.out.println("The following applications have booked status:");
+        System.out.println("ID | Applicant Name | NRIC | Flat Type | Booking Date");
+        System.out.println("--------------------------------------------------------");
+        
+        int index = 1;
+        for (Application app : bookedApplications) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+            System.out.printf("%2d | %-20s | %-12s | %-10s | %s\n",
+                            index++, 
+                            app.getApplicant().getName(),
+                            app.getApplicant().getNric(),
+                            app.getSelectedFlatType().getDisplayName(),
+                            dateFormat.format(app.getApplicationDate()));
+        }
+        
+        // Ask which application to generate receipt for
+        System.out.print("\nEnter the number of the application to generate receipt for (1-" + 
+                        bookedApplications.size() + "), or 0 to cancel: ");
+        int choice = getIntInput();
+        
+        if (choice <= 0 || choice > bookedApplications.size()) {
+            showMessage("Operation cancelled.");
             return;
         }
+        
+        Application selectedApplication = bookedApplications.get(choice - 1);
         
         // Generate receipt
-        Receipt receipt = officer.generateBookingReceipt(application);
+        Receipt receipt = officer.generateBookingReceipt(selectedApplication);
         
         if (receipt != null) {
             displayReceipt(receipt);

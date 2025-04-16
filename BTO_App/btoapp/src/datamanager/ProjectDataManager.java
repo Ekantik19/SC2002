@@ -1,8 +1,10 @@
 package datamanager;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -64,7 +66,7 @@ public class ProjectDataManager extends DataManager {
     public void setFilePath(String filePath) {
         this.filePath = filePath;
     }
-    
+        
     /**
      * Loads projects from file.
      */
@@ -102,7 +104,22 @@ public class ProjectDataManager extends DataManager {
                         System.out.println("DEBUG: Created project: " + project.getProjectName());
                         projectMap.put(project.getProjectName(), project);
                         System.out.println("DEBUG: Added project to map with key: '" + 
-                                          project.getProjectName() + "'");
+                                        project.getProjectName() + "'");
+                        
+                        // Fix the officer-project relationship
+                        List<HDBOfficer> officers = project.getAssignedOfficers();
+                        for (HDBOfficer officer : officers) {
+                            // Update the officer's assigned project
+                            officer.setAssignedProject(project); 
+                            officer.setRegistrationApproved(true);
+                            System.out.println("DEBUG: Updated officer " + officer.getName() + 
+                                            " with project assignment to " + project.getProjectName());
+                            
+                            // Also update in officer map
+                            if (officerMap.containsKey(officer.getNric())) {
+                                officerMap.put(officer.getNric(), officer);
+                            }
+                        }
                     } else {
                         System.out.println("DEBUG: Failed to parse project from line");
                     }
@@ -307,7 +324,7 @@ public class ProjectDataManager extends DataManager {
             
             System.out.println("DEBUG: Added project to projectMap: " + project.getProjectName());
             System.out.println("DEBUG: projectMap now contains " + projectMap.size() + " projects");
-            return true;
+            return saveProjects();
         }
         return false;
     }
@@ -318,9 +335,88 @@ public class ProjectDataManager extends DataManager {
     public boolean updateProject(Project project) {
         if (project != null && project.getProjectName() != null) {
             projectMap.put(project.getProjectName(), project);
-            return true;
+            return saveProjects();
         }
         return false;
+    }
+
+    /**
+     * Saves all projects to the project data file.
+     */
+    private boolean saveProjects() {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+            // Write header
+            writer.write("Project Name\tNeighborhood\tType 1\tNumber of units for Type 1\tSelling price for Type 1\tType 2\tNumber of units for Type 2\tSelling price for Type 2\tApplication opening date\tApplication closing date\tManager\tOfficer Slot\tOfficer");
+            writer.newLine();
+            
+            // Write project data
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+            
+            for (Project project : projectMap.values()) {
+                // Project name and neighborhood
+                writer.write(project.getProjectName() + "\t");
+                writer.write(project.getNeighborhood() + "\t");
+                
+                // Flat types information
+                List<Project.FlatTypeInfo> flatTypeInfoList = project.getFlatTypeInfoList();
+                
+                // Add 2-Room info if available
+                boolean hasTwoRoom = false;
+                for (Project.FlatTypeInfo info : flatTypeInfoList) {
+                    if (info.getFlatType() == FlatType.TWO_ROOM) {
+                        writer.write("2-Room\t" + info.getNumberOfUnits() + "\t" + info.getSellingPrice() + "\t");
+                        hasTwoRoom = true;
+                        break;
+                    }
+                }
+                if (!hasTwoRoom) {
+                    writer.write("\t0\t0\t");
+                }
+                
+                // Add 3-Room info if available
+                boolean hasThreeRoom = false;
+                for (Project.FlatTypeInfo info : flatTypeInfoList) {
+                    if (info.getFlatType() == FlatType.THREE_ROOM) {
+                        writer.write("3-Room\t" + info.getNumberOfUnits() + "\t" + info.getSellingPrice() + "\t");
+                        hasThreeRoom = true;
+                        break;
+                    }
+                }
+                if (!hasThreeRoom) {
+                    writer.write("\t0\t0\t");
+                }
+                
+                // Application dates
+                writer.write(dateFormat.format(project.getApplicationOpeningDate()) + "\t");
+                writer.write(dateFormat.format(project.getApplicationClosingDate()) + "\t");
+                
+                // Manager and officer slots
+                writer.write(project.getManagerInCharge().getName() + "\t");
+                writer.write(project.getOfficerSlots() + "\t");
+                
+                // Officer list
+                List<HDBOfficer> officers = project.getAssignedOfficers();
+                if (!officers.isEmpty()) {
+                    writer.write("\"");
+                    for (int i = 0; i < officers.size(); i++) {
+                        if (i > 0) {
+                            writer.write(",");
+                        }
+                        writer.write(officers.get(i).getName());
+                    }
+                    writer.write("\"");
+                }
+                
+                writer.newLine();
+            }
+            
+            System.out.println("DEBUG: Saved " + projectMap.size() + " projects to file: " + filePath);
+            return true;
+        } catch (IOException e) {
+            System.out.println("ERROR: Failed to save projects to file: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
     
     /**
@@ -329,7 +425,7 @@ public class ProjectDataManager extends DataManager {
     public boolean removeProject(String projectId) {
         if (projectId != null && projectMap.containsKey(projectId)) {
             projectMap.remove(projectId);
-            return true;
+            return saveProjects();
         }
         return false;
     }

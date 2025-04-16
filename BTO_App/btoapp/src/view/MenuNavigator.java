@@ -102,66 +102,66 @@ public class MenuNavigator {
      * Initializes actions for HDB Officer users.
      */
     private void initializeOfficerActions(ProjectView projectView, 
-                                        ApplicationView applicationView,
-                                        EnquiryView enquiryView,
-                                        PasswordChangeView passwordView) {
+                                ApplicationView applicationView,
+                                EnquiryView enquiryView,
+                                PasswordChangeView passwordView) {
         officerActions = new HashMap<>();
-        
+
         officerActions.put(1, () -> {
             projectView.display();
             return true;
         });
-        
+
         officerActions.put(2, () -> {
             projectView.displayRegisterForProject();
             return true;
         });
-        
+
         officerActions.put(3, () -> {
             projectView.displayRegistrationStatus();
             return true;
         });
-        
+
         officerActions.put(4, () -> {
             projectView.displayAssignedProject();
             return true;
         });
-        
+
         officerActions.put(5, () -> {
             applicationView.displayProcessBooking();
             return true;
         });
-        
+
         officerActions.put(6, () -> {
             applicationView.displayGenerateReceipt();
             return true;
         });
-        
+
         officerActions.put(7, () -> {
             enquiryView.displayProjectEnquiries();
             return true;
         });
-        
+
         officerActions.put(8, () -> {
             HDBOfficer officer = (HDBOfficer) currentUser;
             if (officer.hasActiveApplication()) {
-                applicationView.displayMyApplication();
+            applicationView.displayMyApplication();
             } else {
-                System.out.println("\n!!! ERROR: You don't have an active application.");
+            System.out.println("\n!!! ERROR: You don't have an active application.");
             }
             return true;
         });
-        
+
         officerActions.put(9, () -> {
             HDBOfficer officer = (HDBOfficer) currentUser;
             if (officer.hasActiveApplication()) {
-                applicationView.displayWithdrawalRequest();
+            applicationView.displayWithdrawalRequest();
             } else {
-                System.out.println("\n!!! ERROR: You don't have an active application.");
+            System.out.println("\n!!! ERROR: You don't have an active application.");
             }
             return true;
         });
-        
+
         officerActions.put(10, () -> {
             passwordView.display();
             return true;
@@ -242,8 +242,11 @@ public class MenuNavigator {
      * @return true to continue execution, false to exit
      */
     public boolean navigate(int option) {
-        if (currentUser instanceof Applicant) {
-            MenuAction action = applicantActions.get(option);
+        System.out.println("DEBUG: User role: " + currentUser.getRole());
+        System.out.println("DEBUG: User class: " + currentUser.getClass().getSimpleName());
+        
+        if (currentUser instanceof HDBManager) {
+            MenuAction action = managerActions.get(option);
             if (action != null) {
                 return action.execute();
             }
@@ -252,8 +255,8 @@ public class MenuNavigator {
             if (action != null) {
                 return action.execute();
             }
-        } else if (currentUser instanceof HDBManager) {
-            MenuAction action = managerActions.get(option);
+        } else if (currentUser instanceof Applicant) {
+            MenuAction action = applicantActions.get(option);
             if (action != null) {
                 return action.execute();
             }

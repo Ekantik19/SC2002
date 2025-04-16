@@ -1,10 +1,9 @@
 package model;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import enquiry.Enquiry;
 import enquiry.EnquiryEditor;
+import java.util.ArrayList;
+import java.util.List;
 import model.enums.ApplicationStatus;
 import model.enums.UserRole;;
 
@@ -220,6 +219,26 @@ public class HDBOfficer extends Applicant {
     
     public boolean isRegistrationApproved() {
         return registrationApproved;
+    }
+
+    /**
+     * Sets the assigned project for this officer.
+     * For use during system initialization.
+     * 
+     * @param project The project to assign to this officer
+     */
+    public void setAssignedProject(Project project) {
+        this.assignedProject = project;
+    }
+
+    /**
+     * Sets the registration approval status.
+     * For use during system initialization.
+     * 
+     * @param approved The approval status
+     */
+    public void setRegistrationApproved(boolean approved) {
+        this.registrationApproved = approved;
     }
     
     /**

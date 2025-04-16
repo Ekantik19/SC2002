@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import model.Applicant;
 import model.Application;
 import model.HDBManager;
+import model.HDBOfficer;
 import model.Project;
 import model.enums.ApplicationStatus;
 import model.enums.FlatType;
@@ -44,6 +45,14 @@ public class ApplicationController extends ABaseController implements IApplicati
     @Override
     public Application submitApplication(Applicant applicant, Project project, FlatType flatType) {
         System.out.println("DEBUG: Starting application submission for " + applicant.getName());
+
+        if (applicant instanceof HDBOfficer) {
+        HDBOfficer officer = (HDBOfficer) applicant;
+            if (officer.isAssignedToProject(project)) {
+                System.out.println("DEBUG: Officer is trying to apply for a project they're handling");
+                return null;
+            }
+        }   
         
         // Validate input parameters
         if (!validateInputForSubmission(applicant, project, flatType)) {

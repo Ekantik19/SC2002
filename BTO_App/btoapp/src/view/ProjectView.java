@@ -909,6 +909,24 @@ public class ProjectView extends ARenderView implements IBTOView {
             return;
         }
         
+        // Add explicit check for HDB Officers
+        if (currentUser instanceof HDBOfficer) {
+            HDBOfficer officer = (HDBOfficer) currentUser;
+            System.out.println("DEBUG: Checking if officer is assigned to project: " + project.getProjectName());
+            System.out.println("DEBUG: Officer assigned project: " + 
+                            (officer.getAssignedProject() != null ? officer.getAssignedProject().getProjectName() : "none"));
+            System.out.println("DEBUG: Registration approved: " + officer.isRegistrationApproved());
+            
+            // Direct check for assigned officers
+            List<HDBOfficer> assignedOfficers = project.getAssignedOfficers();
+            for (HDBOfficer assignedOfficer : assignedOfficers) {
+                if (assignedOfficer.getNric().equals(officer.getNric())) {
+                    showError("As an HDB Officer assigned to this project, you cannot apply for it.");
+                    return;
+                }
+            }
+        }
+        
         // Display available flat types
         System.out.println("Available Flat Types:");
         List<FlatType> availableFlatTypes = new ArrayList<>();
@@ -925,9 +943,9 @@ public class ProjectView extends ARenderView implements IBTOView {
                 
                 if (eligible) {
                     System.out.printf("%d. %s - $%.2f\n", 
-                                     availableFlatTypes.size() + 1, 
-                                     type.getDisplayName(),
-                                     info.getSellingPrice());
+                                    availableFlatTypes.size() + 1, 
+                                    type.getDisplayName(),
+                                    info.getSellingPrice());
                     availableFlatTypes.add(type);
                 }
             }
@@ -950,7 +968,7 @@ public class ProjectView extends ARenderView implements IBTOView {
         
         // Confirm application
         System.out.println("\nYou are about to apply for a " + selectedFlatType.getDisplayName() + 
-                          " flat in " + project.getProjectName() + ".");
+                        " flat in " + project.getProjectName() + ".");
         System.out.print("Confirm application? (Y/N): ");
         String confirm = scanner.nextLine();
         
@@ -960,7 +978,7 @@ public class ProjectView extends ARenderView implements IBTOView {
             
             if (application != null) {
                 showMessage("Application submitted successfully! Your application ID is: " + 
-                           application.getApplicationId());
+                        application.getApplicationId());
             } else {
                 showError("Failed to submit application. Please try again later.");
             }
