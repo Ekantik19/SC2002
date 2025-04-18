@@ -84,30 +84,6 @@ public class HDBOfficer extends Applicant {
     }
     
     /**
-     * Books a flat for an approved application.
-     * 
-     * @param application The application to book a flat for
-     * @return true if the flat was successfully booked, false otherwise
-     */
-    public boolean bookFlat(Application application) {
-        // Only officers assigned to the project can book flats
-        if (!isAssignedToProject(application.getProject())) {
-            return false;
-        }
-        
-        if (application.getStatus() == ApplicationStatus.SUCCESSFUL) {
-            boolean booked = application.bookFlat();
-            if (booked) {
-                Applicant applicant = application.getApplicant();
-                applicant.setBookedFlatType(application.getSelectedFlatType());
-                applicant.setBookedProject(application.getProject());
-            }
-            return booked;
-        }
-        return false;
-    }
-    
-    /**
      * Generates a receipt for a flat booking.
      * 
      * @param application The application to generate a receipt for

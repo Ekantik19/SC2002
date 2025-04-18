@@ -80,35 +80,6 @@ public class OfficerController extends ABaseController implements IOfficerContro
         return officer.isRegistrationApproved();
     }
     
-    @Override
-    public boolean bookFlat(Application application, HDBOfficer officer) {
-        // Validate input parameters
-        if (!validateNotNull(application, "Application") || !validateNotNull(officer, "Officer")) {
-            return false;
-        }
-        
-        // Check if officer is assigned to the project
-        if (!officer.isAssignedToProject(application.getProject())) {
-            System.out.println("Officer is not assigned to this project.");
-            return false;
-        }
-        
-        // Check if application is in SUCCESSFUL status
-        if (application.getStatus() != ApplicationStatus.SUCCESSFUL) {
-            System.out.println("Application is not in SUCCESSFUL status. Cannot book flat.");
-            return false;
-        }
-        
-        // Book flat
-        boolean booked = officer.bookFlat(application);
-        
-        // Update application in data manager if booking was successful
-        if (booked) {
-            applicationDataManager.updateApplication(application);
-        }
-        
-        return booked;
-    }
     
     @Override
     public Receipt generateBookingReceipt(Application application, HDBOfficer officer) {

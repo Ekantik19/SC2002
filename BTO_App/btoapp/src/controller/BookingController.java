@@ -32,7 +32,7 @@ public class BookingController extends ABaseController implements IBookingContro
         this.applicationDataManager = applicationDataManager;
         this.projectDataManager = projectDataManager;
     }
-    
+
     @Override
     public boolean bookFlat(String applicationId, HDBOfficer officer) {
         // Validate input parameters
@@ -45,6 +45,15 @@ public class BookingController extends ABaseController implements IBookingContro
         Application application = applicationDataManager.getApplicationById(applicationId);
         if (application == null) {
             System.out.println("Application not found.");
+            return false;
+        }
+        
+        // Retrieve the applicant
+        Applicant applicant = application.getApplicant();
+        
+        // Check if applicant has already booked a flat
+        if (applicant.hasBookedFlat()) {
+            System.out.println("Applicant has already booked a flat and cannot book another.");
             return false;
         }
         
@@ -74,10 +83,8 @@ public class BookingController extends ABaseController implements IBookingContro
         boolean booked = application.bookFlat();
         
         if (booked) {
-
             application.setBookingDate(new Date());
             // Update applicant's booked flat information
-            Applicant applicant = application.getApplicant();
             applicant.setBookedFlatType(flatType);
             applicant.setBookedProject(project);
             

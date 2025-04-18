@@ -1,7 +1,6 @@
 package controller.interfaces;
 
 import java.util.List;
-
 import model.Application;
 import model.HDBOfficer;
 import model.Project;
@@ -33,15 +32,6 @@ public interface IOfficerController {
      * @return true if registration is approved, false if pending or not registered
      */
     boolean getRegistrationStatus(HDBOfficer officer);
-    
-    /**
-     * Books a flat for a successful application.
-     * 
-     * @param application The application to book a flat for
-     * @param officer The officer booking the flat
-     * @return true if booking was successful, false otherwise
-     */
-    boolean bookFlat(Application application, HDBOfficer officer);
     
     /**
      * Generates a receipt for a flat booking.
