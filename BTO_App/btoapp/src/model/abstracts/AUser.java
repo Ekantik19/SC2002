@@ -38,23 +38,6 @@ public abstract class AUser {
     }
     
     /**
-     * Validates if the provided password matches the user's password.
-     * 
-     * @param inputPassword The password to validate
-     * @return true if the password matches, false otherwise
-     */
-    // public boolean validatePassword(String inputPassword) {
-    //     return this.password.equals(inputPassword);
-    // }
-
-    private boolean validatePassword(String password) {
-        System.out.println("DEBUG: User.validatePassword - comparing '" + password + "' with '" + getPassword() + "'");
-        boolean result = getPassword().equals(password);
-        System.out.println("DEBUG: User.validatePassword - result: " + result);
-        return result;
-    }
-    
-    /**
      * Changes the user's password.
      * 
      * @param newPassword The new password
@@ -71,14 +54,6 @@ public abstract class AUser {
     public boolean isMarried() {
         return "Married".equalsIgnoreCase(maritalStatus);
     }
-    
-    /**
-     * Checks if the user is eligible to apply for a BTO project.
-     * This is an abstract method to be implemented by subclasses.
-     * 
-     * @return true if the user is eligible, false otherwise
-     */
-    public abstract boolean isEligibleForBTO();
     
     // Getters and Setters
     

@@ -7,7 +7,6 @@ package view.interfaces;
  * @version 1.0
  */
 public interface ViewInterface {
-    void display();
     void showMessage(String message);
     void showError(String error);
 }

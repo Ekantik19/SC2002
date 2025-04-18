@@ -9,7 +9,6 @@ import model.Applicant;
 import model.Application;
 import model.HDBOfficer;
 import model.Project;
-import model.Receipt;
 import model.enums.ApplicationStatus;
 import model.enums.FlatType;
 
@@ -98,67 +97,6 @@ public class BookingController extends ABaseController implements IBookingContro
         
         System.out.println("DEBUG: Booking result: " + booked);
         return booked;
-    }
-    
-    @Override
-    public Receipt generateBookingReceipt(String applicationId, HDBOfficer officer) {
-        // Validate input parameters
-        if (!validateNotNullOrEmpty(applicationId, "Application ID") || 
-            !validateNotNull(officer, "Officer")) {
-            return null;
-        }
-        
-        // Retrieve the application
-        Application application = applicationDataManager.getApplicationById(applicationId);
-        if (application == null) {
-            System.out.println("Application not found.");
-            return null;
-        }
-        
-        // Check if officer is assigned to the project
-        if (!officer.isAssignedToProject(application.getProject())) {
-            System.out.println("Officer is not assigned to this project.");
-            return null;
-        }
-        
-        // Check if application is in BOOKED status
-        if (application.getStatus() != ApplicationStatus.BOOKED) {
-            System.out.println("Application is not in BOOKED status. Cannot generate receipt.");
-            return null;
-        }
-        
-        // Generate receipt
-        return new Receipt(
-            application.getApplicationId(),
-            application.getApplicant().getName(),
-            application.getApplicant().getNric(),
-            application.getApplicant().getAge(),
-            application.getApplicant().getMaritalStatus(),
-            application.getSelectedFlatType(),
-            application.getProject().getProjectName(),
-            application.getProject().getNeighborhood()
-        );
-    }
-    
-    @Override
-    public Application getBookingDetails(String applicationId) {
-        // Validate input
-        if (!validateNotNullOrEmpty(applicationId, "Application ID")) {
-            return null;
-        }
-        
-        Application application = applicationDataManager.getApplicationById(applicationId);
-        
-        // Only return the application if it's in BOOKED status
-        if (application != null && application.getStatus() == ApplicationStatus.BOOKED) {
-            return application;
-        } else if (application != null) {
-            System.out.println("Application is not in BOOKED status.");
-        } else {
-            System.out.println("Application not found.");
-        }
-        
-        return null;
     }
     
     @Override

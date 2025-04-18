@@ -1,7 +1,6 @@
 package model;
 
 import java.util.Date;
-
 import model.enums.FlatType;
 
 /**
@@ -83,47 +82,5 @@ public class Receipt {
         sb.append("===================================================\n");
         
         return sb.toString();
-    }
-    
-    // Getters
-    
-    public String getReceiptId() {
-        return receiptId;
-    }
-    
-    public String getApplicationId() {
-        return applicationId;
-    }
-    
-    public String getApplicantName() {
-        return applicantName;
-    }
-    
-    public String getApplicantNric() {
-        return applicantNric;
-    }
-    
-    public int getApplicantAge() {
-        return applicantAge;
-    }
-    
-    public String getMaritalStatus() {
-        return maritalStatus;
-    }
-    
-    public FlatType getFlatType() {
-        return flatType;
-    }
-    
-    public String getProjectName() {
-        return projectName;
-    }
-    
-    public String getNeighborhood() {
-        return neighborhood;
-    }
-    
-    public Date getBookingDate() {
-        return bookingDate;
     }
 }

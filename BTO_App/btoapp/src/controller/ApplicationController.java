@@ -105,15 +105,6 @@ public class ApplicationController extends ABaseController implements IApplicati
         return "APP-" + nricPart + "-" + projectPart;
     }
     
-    @Override
-    public Application viewApplication(String applicationId) {
-        // Validate input
-        if (!validateNotNullOrEmpty(applicationId, "Application ID")) {
-            return null;
-        }
-        
-        return applicationDataManager.getApplicationById(applicationId);
-    }
     
     @Override
     public boolean requestWithdrawal(String applicationId, Applicant applicant) {
@@ -142,16 +133,6 @@ public class ApplicationController extends ABaseController implements IApplicati
         }
         
         return applicationDataManager.getApplicationsByProject(project.getProjectName());
-    }
-    
-    @Override
-    public List<Application> getApplicationsByApplicant(Applicant applicant) {
-        // Validate input
-        if (!validateNotNull(applicant, "Applicant")) {
-            return new ArrayList<>();
-        }
-        
-        return applicationDataManager.getApplicationsByApplicant(applicant.getNric());
     }
     
     @Override

@@ -52,20 +52,6 @@ public class ProjectDataManager extends DataManager {
         // Load projects on initialization
         loadProjects();
     }
-    
-    /**
-     * Gets the current file path being used.
-     */
-    public String getFilePath() {
-        return filePath;
-    }
-    
-    /**
-     * Sets a new file path for the project data file.
-     */
-    public void setFilePath(String filePath) {
-        this.filePath = filePath;
-    }
         
     /**
      * Loads projects from file.
@@ -282,19 +268,6 @@ public class ProjectDataManager extends DataManager {
     public List<Project> getAllProjects() {
         System.out.println("DEBUG: getAllProjects returning " + projectMap.size() + " projects");
         return new ArrayList<>(projectMap.values());
-    }
-    
-    /**
-     * Gets a map of all projects by name.
-     */
-    public Map<String, Project> getAllProjectsMap() {
-        System.out.println("DEBUG: getAllProjectsMap returning " + projectMap.size() + " projects");
-        for (String key : projectMap.keySet()) {
-            Project p = projectMap.get(key);
-            System.out.println("DEBUG: Project in map - Key: '" + key + "', Name: '" + 
-                              p.getProjectName() + "'");
-        }
-        return new HashMap<>(projectMap);
     }
     
     /**

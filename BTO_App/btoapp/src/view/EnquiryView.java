@@ -1,25 +1,24 @@
 package view;
 
+import controller.EnquiryController;
+import controller.ProjectController;
+import enquiry.Enquiry;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-
-import controller.EnquiryController;
-import controller.ProjectController;
-import enquiry.Enquiry;
 import model.Applicant;
 import model.HDBManager;
 import model.HDBOfficer;
 import model.Project;
 import model.User;
 import view.abstracts.ARenderView;
-import view.interfaces.IBTOView;
+import view.interfaces.ViewInterface;
 
 /**
  * View for enquiry-related operations in the BTO Management System.
  */
-public class EnquiryView extends ARenderView implements IBTOView {
+public class EnquiryView extends ARenderView implements ViewInterface {
     
     private User currentUser;
     private EnquiryController enquiryController;
@@ -39,17 +38,6 @@ public class EnquiryView extends ARenderView implements IBTOView {
         this.enquiryController = enquiryController;
         this.projectController = projectController;
         this.scanner = new Scanner(System.in);
-    }
-    
-    @Override
-    public void display() {
-        if (currentUser instanceof Applicant) {
-            displayMyEnquiries();
-        } else if (currentUser instanceof HDBOfficer) {
-            displayProjectEnquiries();
-        } else if (currentUser instanceof HDBManager) {
-            displayAllEnquiries();
-        }
     }
     
     /**
@@ -522,17 +510,6 @@ public class EnquiryView extends ARenderView implements IBTOView {
         } else {
             showError("Failed to send reply. Please try again later.");
         }
-    }
-    
-    @Override
-    public void refreshData() {
-        // Refresh data if needed
-    }
-    
-    @Override
-    public boolean handleNavigation(int option) {
-        // Not needed for this view
-        return true;
     }
     
     @Override

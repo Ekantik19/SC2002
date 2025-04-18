@@ -3,7 +3,6 @@ package model;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
 import model.enums.ApplicationStatus;
 import model.enums.FlatType;
 
@@ -73,10 +72,6 @@ public class Report {
         
         public FlatType getFlatType() {
             return flatType;
-        }
-        
-        public Date getBookingDate() {
-            return bookingDate;
         }
     }
     

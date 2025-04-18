@@ -471,21 +471,6 @@ public class ApplicationDataManager {
     }
     
     /**
-     * Removes an application from the system.
-     * 
-     * @param applicationId The ID of the application to remove
-     * @return true if the application was successfully removed, false otherwise
-     */
-    public boolean removeApplication(String applicationId) {
-        if (applicationId == null || !applicationMap.containsKey(applicationId)) {
-            return false;
-        }
-        
-        applicationMap.remove(applicationId);
-        return saveApplicationData();
-    }
-    
-    /**
      * Gets an application by its ID.
      * 
      * @param applicationId The ID of the application to retrieve
@@ -532,17 +517,6 @@ public class ApplicationDataManager {
      * @param applicantNric The NRIC of the applicant
      * @return A list of applications for the specified applicant
      */
-    // public List<Application> getApplicationsByApplicant(String applicantNric) {
-    //     List<Application> applicantApplications = new ArrayList<>();
-        
-    //     for (Application application : applicationMap.values()) {
-    //         if (application.getApplicant().getNric().equals(applicantNric)) {
-    //             applicantApplications.add(application);
-    //         }
-    //     }
-        
-    //     return applicantApplications;
-    // }
     public List<Application> getApplicationsByApplicant(String applicantNric) {
         List<Application> applicantApplications = new ArrayList<>();
         
@@ -564,24 +538,6 @@ public class ApplicationDataManager {
                         " applications for NRIC: " + applicantNric);
         
         return applicantApplications;
-    }
-    
-    /**
-     * Gets all applications with a specific status.
-     * 
-     * @param status The status to filter by
-     * @return A list of applications with the specified status
-     */
-    public List<Application> getApplicationsByStatus(ApplicationStatus status) {
-        List<Application> statusApplications = new ArrayList<>();
-        
-        for (Application application : applicationMap.values()) {
-            if (application.getStatus() == status) {
-                statusApplications.add(application);
-            }
-        }
-        
-        return statusApplications;
     }
     
     /**

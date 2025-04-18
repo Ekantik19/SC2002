@@ -1,7 +1,6 @@
 package controller.interfaces;
 
 import java.util.List;
-
 import model.Applicant;
 import model.Application;
 import model.Project;
@@ -29,14 +28,6 @@ public interface IApplicationController {
     Application submitApplication(Applicant applicant, Project project, FlatType flatType);
     
     /**
-     * Views an application by its ID.
-     * 
-     * @param applicationId The ID of the application to view
-     * @return The requested application if found, null otherwise
-     */
-    Application viewApplication(String applicationId);
-    
-    /**
      * Requests a withdrawal of an application.
      * 
      * @param applicationId The ID of the application to withdraw
@@ -52,14 +43,6 @@ public interface IApplicationController {
      * @return A list of applications for the specified project
      */
     List<Application> getApplicationsByProject(Project project);
-    
-    /**
-     * Gets all applications by a specific applicant.
-     * 
-     * @param applicant The applicant to get applications for
-     * @return A list of applications by the specified applicant
-     */
-    List<Application> getApplicationsByApplicant(Applicant applicant);
     
     /**
      * Gets applications by status for a specific project.

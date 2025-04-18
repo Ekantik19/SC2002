@@ -34,20 +34,4 @@ public interface IUserManagement {
      */
     boolean validateNRIC(String nric);
     
-    /**
-     * Updates the user's profile.
-     * 
-     * @param name The user's name
-     * @param age The user's age
-     * @param maritalStatus The user's marital status
-     * @return true if the profile was successfully updated, false otherwise
-     */
-    boolean updateProfile(String name, int age, String maritalStatus);
-    
-    /**
-     * Logs out the current user.
-     * 
-     * @return true if logout was successful, false otherwise
-     */
-    boolean logout();
 }

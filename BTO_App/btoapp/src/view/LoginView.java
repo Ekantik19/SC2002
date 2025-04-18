@@ -4,12 +4,12 @@ import controller.AuthenticationController;
 import java.util.Scanner;
 import model.User;
 import view.abstracts.ARenderView;
-import view.interfaces.IBTOView;
+import view.interfaces.ViewInterface;
 
 /**
  * LoginView handles the user login interface for the BTO Management System.
  */
-public class LoginView extends ARenderView implements IBTOView {
+public class LoginView extends ARenderView implements ViewInterface{
     
     private AuthenticationController authController;
     private Scanner scanner;
@@ -22,11 +22,6 @@ public class LoginView extends ARenderView implements IBTOView {
     public LoginView(AuthenticationController authController) {
         this.authController = authController;
         this.scanner = new Scanner(System.in);
-    }
-    
-    @Override
-    public void display() {
-        displayAndGetUser();
     }
     
     /**
@@ -61,17 +56,6 @@ public class LoginView extends ARenderView implements IBTOView {
             showError("Invalid credentials. Please try again.");
             return null;
         }
-    }
-    
-    @Override
-    public void refreshData() {
-        // No data to refresh in login view
-    }
-    
-    @Override
-    public boolean handleNavigation(int option) {
-        // Not needed for login view
-        return true;
     }
     
     @Override

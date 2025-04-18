@@ -53,14 +53,6 @@ public class EnquiryDataManager extends DataManager {
         }
     }
     
-    public String getFilePath() {
-        return filePath;
-    }
-    
-    public void setFilePath(String filePath) {
-        this.filePath = filePath;
-    }
-    
     public List<Enquiry> loadEnquiries() {
         System.out.println("DEBUG: Loading enquiries from: " + filePath);
         enquiryMap.clear();
@@ -374,17 +366,6 @@ public class EnquiryDataManager extends DataManager {
         }
         
         System.out.println("DEBUG: Found " + result.size() + " enquiries for applicant: " + applicantNric);
-        return result;
-    }
-    
-    public List<Enquiry> getEnquiriesByProject(String projectName) {
-        List<Enquiry> result = new ArrayList<>();
-        for (Enquiry enquiry : enquiryMap.values()) {
-            if (enquiry.getProject() != null && 
-                enquiry.getProject().getProjectName().equals(projectName)) {
-                result.add(enquiry);
-            }
-        }
         return result;
     }
 }

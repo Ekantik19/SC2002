@@ -33,33 +33,12 @@ public class User extends AUser implements IUserManagement {
     }
     
     /**
-     * Determines if the user is eligible to apply for BTO projects.
-     * 
-     * @return true if the user is eligible, false otherwise
-     */
-    @Override
-    public boolean isEligibleForBTO() {
-        // Basic eligibility: Age 21+ for married, 35+ for singles
-        if (isMarried()) {
-            return getAge() >= 21;
-        } else {
-            return getAge() >= 35;
-        }
-    }
-    
-    /**
      * Authenticates a user with their credentials.
      * 
      * @param nric The user's NRIC
      * @param password The user's password
      * @return true if authentication is successful, false otherwise
      */
-    // @Override
-    // public boolean authenticate(String nric, String password) {
-    //     return getNric().equals(nric) && validatePassword(password);
-    // }
-
-    // In User.java
     @Override
     public boolean authenticate(String nric, String password) {
         System.out.println("DEBUG: User.authenticate - checking NRIC: " + nric);
@@ -102,34 +81,6 @@ public class User extends AUser implements IUserManagement {
     @Override
     public boolean validateNRIC(String nric) {
         return nric != null && nric.matches(NRIC_PATTERN);
-    }
-    
-    /**
-     * Updates the user's profile.
-     * 
-     * @param name The user's name
-     * @param age The user's age
-     * @param maritalStatus The user's marital status
-     * @return true if the profile was successfully updated, false otherwise
-     */
-    @Override
-    public boolean updateProfile(String name, int age, String maritalStatus) {
-        // Validation logic could be added here
-        setName(name);
-        setAge(age);
-        setMaritalStatus(maritalStatus);
-        return true;
-    }
-    
-    /**
-     * Logs out the current user.
-     * 
-     * @return true if logout was successful, false otherwise
-     */
-    @Override
-    public boolean logout() {
-        // This would be implemented in a controller class
-        return true;
     }
     
     /**

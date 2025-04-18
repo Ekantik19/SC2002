@@ -46,18 +46,6 @@ public class Applicant extends User {
     }
     
     /**
-     * Requests a withdrawal of the current application.
-     * 
-     * @return true if the withdrawal was successfully requested, false otherwise
-     */
-    public boolean requestWithdrawal() {
-        if (currentApplication != null) {
-            return currentApplication.requestWithdrawal();
-        }
-        return false;
-    }
-    
-    /**
      * Adds an enquiry to the set of enquiries made by the applicant.
      *
      * @param enquiry the enquiry to be added
@@ -96,21 +84,6 @@ public class Applicant extends User {
         return new ArrayList<>(enquiries);
     }
 
-    /**
-     * Gets an enquiry by its ID.
-     * 
-     * @param enquiryId The ID of the enquiry to retrieve
-     * @return The enquiry with the specified ID, or null if not found
-     */
-    public Enquiry getEnquiryById(String enquiryId) {
-        for (Enquiry enquiry : enquiries) {
-            if (enquiry.getEnquiryId().equals(enquiryId)) {
-                return enquiry;
-            }
-        }
-        return null;
-    }
-
     public boolean hasBookedFlat() {
         return bookedFlatType != null && bookedProject != null;
     }
@@ -125,16 +98,8 @@ public class Applicant extends User {
         this.currentApplication = currentApplication;
     }
 
-    public FlatType getBookedFlatType() {
-        return bookedFlatType;
-    }
-
     public void setBookedFlatType(FlatType bookedFlatType) {
         this.bookedFlatType = bookedFlatType;
-    }
-
-    public Project getBookedProject() {
-        return bookedProject;
     }
 
     public void setBookedProject(Project bookedProject) {

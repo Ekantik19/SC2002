@@ -35,7 +35,4 @@ public abstract class ARenderView {
             }
         }
     }
-    
-    // Abstract method for each view to implement
-    public abstract void display();
 }

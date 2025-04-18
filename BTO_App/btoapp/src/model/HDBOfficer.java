@@ -1,11 +1,8 @@
 package model;
 
-import enquiry.Enquiry;
-import enquiry.EnquiryEditor;
-import java.util.ArrayList;
-import java.util.List;
 import model.enums.ApplicationStatus;
-import model.enums.UserRole;;
+import model.enums.UserRole;
+;
 
 /**
  * Class representing an HDB Officer in the BTO Management System.
@@ -66,24 +63,6 @@ public class HDBOfficer extends Applicant {
     }
     
     /**
-     * Retrieves an application by the applicant's NRIC.
-     * 
-     * @param applicantNric The NRIC of the applicant
-     * @return The application if found, null otherwise
-     */
-    public Application retrieveApplicationByNric(String applicantNric) {
-        if (isProjectAssigned()) {
-            List<Application> applications = assignedProject.getApplications();
-            for (Application app : applications) {
-                if (app.getApplicant().getNric().equals(applicantNric)) {
-                    return app;
-                }
-            }
-        }
-        return null;
-    }
-    
-    /**
      * Generates a receipt for a flat booking.
      * 
      * @param application The application to generate a receipt for
@@ -107,36 +86,6 @@ public class HDBOfficer extends Applicant {
             );
         }
         return null;
-    }
-    
-    /**
-     * Replies to an enquiry for the assigned project.
-     * 
-     * @param enquiry The enquiry to reply to
-     * @param replyText The text of the reply
-     * @param enquiryEditor The enquiry editor to use
-     * @return true if the reply was successful, false otherwise
-     */
-    public boolean replyToEnquiry(Enquiry enquiry, String replyText, EnquiryEditor enquiryEditor) {
-        // Officer must be assigned to the project to reply
-        if (!isAssignedToProject(enquiry.getProject())) {
-            return false;
-        }
-        
-        // Use the EnquiryEditor to reply, which will handle authorization
-        return enquiryEditor.reply(enquiry, replyText, getNric());
-    }
-    
-    /**
-     * Gets a list of enquiries for the assigned project.
-     * 
-     * @return A list of enquiries for the assigned project
-     */
-    public List<Enquiry> getProjectEnquiries() {
-        if (isProjectAssigned()) {
-            return assignedProject.getEnquiries();
-        }
-        return new ArrayList<>();
     }
     
     /**
@@ -216,19 +165,5 @@ public class HDBOfficer extends Applicant {
     public void setRegistrationApproved(boolean approved) {
         this.registrationApproved = approved;
     }
-    
-    /**
-     * Returns a string representation of the HDB Officer.
-     * 
-     * @return A string with the officer's details
-     */
-    @Override
-    public String toString() {
-        String baseInfo = super.toString();
-        if (assignedProject != null) {
-            return baseInfo + ", Project: " + assignedProject.getProjectName() + 
-                   ", Status: " + (registrationApproved ? "Approved" : "Pending");
-        }
-        return baseInfo + ", No Project Assigned";
-    }
+
 }

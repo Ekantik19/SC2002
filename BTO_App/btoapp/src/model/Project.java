@@ -70,16 +70,6 @@ public class Project extends AProject {
     }
     
     /**
-     * Removes an application from the project.
-     */
-    public boolean removeApplication(Application application) {
-        if (application != null) {
-            return applications.remove(application);
-        }
-        return false;
-    }
-    
-    /**
      * Gets a list of all applications for the project.
      */
     public List<Application> getApplications() {
@@ -124,103 +114,5 @@ public class Project extends AProject {
         return currentDate.after(getApplicationOpeningDate()) && 
                currentDate.before(getApplicationClosingDate()) &&
                isVisible();
-    }
-    
-    /**
-     * Gets the number of available units for a specific flat type.
-     */
-    public int getAvailableUnits(FlatType flatType) {
-        for (FlatTypeInfo info : getFlatTypeInfoList()) {
-            if (info.getFlatType() == flatType) {
-                return info.getNumberOfUnits();
-            }
-        }
-        return 0;
-    }
-    
-    /**
-     * Gets the selling price for a specific flat type.
-     */
-    public double getSellingPrice(FlatType flatType) {
-        for (FlatTypeInfo info : getFlatTypeInfoList()) {
-            if (info.getFlatType() == flatType) {
-                return info.getSellingPrice();
-            }
-        }
-        return 0;
-    }
-    
-    /**
-     * Updates the flat type information.
-     */
-    public boolean updateFlatType(FlatType flatType, int numberOfUnits, double sellingPrice) {
-        // Use the parent class's FlatTypeInfo list directly
-        List<FlatTypeInfo> flatInfoList = getFlatTypeInfoList();
-        
-        for (FlatTypeInfo info : flatInfoList) {
-            if (info.getFlatType() == flatType) {
-                // Remove the old info
-                flatInfoList.remove(info);
-                // Add a new info with updated values
-                addFlatType(flatType, numberOfUnits, sellingPrice);
-                return true;
-            }
-        }
-        
-        // If the flat type doesn't exist yet, add it
-        addFlatType(flatType, numberOfUnits, sellingPrice);
-        return true;
-    }
-    
-    /**
-     * Returns a string representation of the project.
-     */
-    @Override
-    public String toString() {
-        return "Project: " + getProjectName() + 
-               ", Neighborhood: " + getNeighborhood() + 
-               ", Open: " + getApplicationOpeningDate() + 
-               ", Close: " + getApplicationClosingDate() + 
-               ", Visible: " + (isVisible() ? "Yes" : "No");
-    }
-    
-    /**
-     * Returns a detailed string representation of the project.
-     */
-    public String getDetailedInfo() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Project Name: ").append(getProjectName()).append("\n");
-        sb.append("Neighborhood: ").append(getNeighborhood()).append("\n");
-        sb.append("Application Period: ").append(getApplicationOpeningDate())
-          .append(" to ").append(getApplicationClosingDate()).append("\n");
-        
-        if (getManagerInCharge() != null) {
-            sb.append("Manager: ").append(getManagerInCharge().getName()).append("\n");
-        } else {
-            sb.append("Manager: Not assigned\n");
-        }
-        
-        sb.append("Visibility: ").append(isVisible() ? "Visible" : "Hidden").append("\n");
-        sb.append("Officer Slots: ").append(getOfficerSlots())
-          .append(" (").append(getRemainingOfficerSlots()).append(" remaining)\n");
-        
-        sb.append("\nFlat Types:\n");
-        for (FlatTypeInfo info : getFlatTypeInfoList()) {
-            sb.append("- ").append(info.getFlatType().getDisplayName())
-              .append(": ").append(info.getNumberOfUnits()).append(" units, $")
-              .append(String.format("%.2f", info.getSellingPrice())).append("\n");
-        }
-        
-        sb.append("\nAssigned Officers:\n");
-        List<HDBOfficer> officers = getAssignedOfficers();
-        if (officers.isEmpty()) {
-            sb.append("- No officers assigned\n");
-        } else {
-            for (HDBOfficer officer : officers) {
-                sb.append("- ").append(officer.getName()).append("\n");
-            }
-        }
-        
-        return sb.toString();
     }
 }

@@ -1,21 +1,20 @@
 package view;
 
+import controller.ProjectController;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Scanner;
-
-import controller.ProjectController;
 import model.HDBManager;
 import model.Project;
 import model.Report;
 import model.enums.FlatType;
 import view.abstracts.ARenderView;
-import view.interfaces.IBTOView;
+import view.interfaces.ViewInterface;
 
 /**
  * View for report generation and viewing in the BTO Management System.
  */
-public class ReportView extends ARenderView implements IBTOView {
+public class ReportView extends ARenderView implements ViewInterface{
     
     private HDBManager manager;
     private ProjectController projectController;
@@ -32,8 +31,7 @@ public class ReportView extends ARenderView implements IBTOView {
         this.projectController = projectController;
         this.scanner = new Scanner(System.in);
     }
-    
-    @Override
+ 
     public void display() {
         printHeader("REPORT GENERATION");
         
@@ -229,17 +227,6 @@ public class ReportView extends ARenderView implements IBTOView {
         
         System.out.println("\nPress Enter to continue...");
         scanner.nextLine();
-    }
-    
-    @Override
-    public void refreshData() {
-        // Refresh data if needed
-    }
-    
-    @Override
-    public boolean handleNavigation(int option) {
-        // Not needed for this view
-        return true;
     }
     
     @Override

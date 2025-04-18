@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Scanner;
 import model.User;
 import view.abstracts.ARenderView;
-import view.interfaces.IBTOView;
+import view.interfaces.ViewInterface;
 import view.menu.MenuAction;
 import view.menu.MenuBuilder;
 import view.menu.MenuBuilderFactory;
@@ -18,7 +18,7 @@ import view.menu.MenuBuilderFactory;
  * @author Your Name
  * @version 1.0
  */
-public class MainMenuView extends ARenderView implements IBTOView {
+public class MainMenuView extends ARenderView implements ViewInterface{
     
     private User currentUser;
     private MenuNavigator menuNavigator;
@@ -65,8 +65,7 @@ public class MainMenuView extends ARenderView implements IBTOView {
         // Build menu actions
         this.menuActions = new HashMap<>();
     }
-    
-    @Override
+
     public void display() {
         boolean exit = false;
         
@@ -102,17 +101,6 @@ public class MainMenuView extends ARenderView implements IBTOView {
                 }
             }
         }
-    }
-    
-    @Override
-    public void refreshData() {
-        // Nothing to refresh in main menu
-    }
-    
-    @Override
-    public boolean handleNavigation(int option) {
-        // Now delegated to MenuNavigator
-        return true;
     }
     
     @Override

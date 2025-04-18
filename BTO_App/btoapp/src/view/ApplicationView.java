@@ -14,12 +14,12 @@ import model.Receipt;
 import model.User;
 import model.enums.ApplicationStatus;
 import view.abstracts.ARenderView;
-import view.interfaces.IBTOView;
+import view.interfaces.*;
 
 /**
  * View for application-related operations in the BTO Management System.
  */
-public class ApplicationView extends ARenderView implements IBTOView {
+public class ApplicationView extends ARenderView implements ViewInterface {
     
     private User currentUser;
     private ApplicationController applicationController;
@@ -35,22 +35,11 @@ public class ApplicationView extends ARenderView implements IBTOView {
      */
     public ApplicationView(User currentUser, ApplicationController applicationController, 
                       ProjectController projectController, BookingController bookingController) {
-    this.currentUser = currentUser;
-    this.applicationController = applicationController;
-    this.projectController = projectController;
-    this.bookingController=bookingController;
-    this.scanner = new Scanner(System.in);
-}
-    
-    @Override
-    public void display() {
-        if (currentUser instanceof Applicant) {
-            displayMyApplication();
-        } else if (currentUser instanceof HDBOfficer) {
-            displayOfficerApplications();
-        } else if (currentUser instanceof HDBManager) {
-            displayManageApplications();
-        }
+        this.currentUser = currentUser;
+        this.applicationController = applicationController;
+        this.projectController = projectController;
+        this.bookingController=bookingController;
+        this.scanner = new Scanner(System.in);
     }
     
     /**
@@ -75,38 +64,7 @@ public class ApplicationView extends ARenderView implements IBTOView {
         
         displayApplicationDetails(currentApplication);
     }
-    
-    /**
-     * Displays applications for an HDB officer.
-     */
-    private void displayOfficerApplications() {
-        if (!(currentUser instanceof HDBOfficer)) {
-            showError("Only HDB Officers can access this view.");
-            return;
-        }
-        
-        HDBOfficer officer = (HDBOfficer) currentUser;
-        
-        // Check if officer is assigned to a project
-        if (!officer.isProjectAssigned()) {
-            showError("You are not assigned to any project yet.");
-            return;
-        }
-        
-        printHeader("PROJECT APPLICATIONS: " + officer.getAssignedProject().getProjectName());
-        
-        // Get applications for the officer's project
-        List<Application> applications = applicationController.getApplicationsByProject(
-            officer.getAssignedProject());
-        
-        if (applications.isEmpty()) {
-            showMessage("No applications found for this project.");
-            return;
-        }
-        
-        displayApplicationsList(applications);
-    }
-    
+
     /**
      * Displays application management interface for an HDB manager.
      */
@@ -657,17 +615,6 @@ public class ApplicationView extends ARenderView implements IBTOView {
         
         System.out.println("\nPress Enter to continue...");
         scanner.nextLine();
-    }
-    
-    @Override
-    public void refreshData() {
-        // Refresh data if needed
-    }
-    
-    @Override
-    public boolean handleNavigation(int option) {
-        // Not needed for this view
-        return true;
     }
     
     @Override

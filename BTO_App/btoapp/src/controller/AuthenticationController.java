@@ -189,15 +189,6 @@ public class AuthenticationController extends AAuthenticationController {
     }
     
     /**
-     * Refreshes user data from data managers.
-     * Call this method when user data has been updated externally.
-     */
-    public void refreshUsers() {
-        userMap.clear();
-        loadUsers();
-    }
-    
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -262,59 +253,5 @@ public class AuthenticationController extends AAuthenticationController {
         }
         
         return false;
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean loadUserData(String filePath) {
-        boolean success = false;
-        
-        // For managers
-        if (filePath.contains("Manager")) {
-            managerDataManager.setFilePath(filePath);
-            success = managerDataManager.loadManagerData();
-        }
-        // For officers
-        else if (filePath.contains("Officer")) {
-            success = officerDataManager.loadOfficerData();
-        }
-        // For applicants
-        else if (filePath.contains("Applicant")) {
-            applicantDataManager.setFilePath(filePath);
-            success = (applicantDataManager.readAllApplicants() != null);
-        }
-        
-        if (success) {
-            refreshUsers();
-        }
-        
-        return success;
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean saveUserData(String filePath) {
-        boolean success = false;
-        
-        // For managers
-        if (filePath.contains("Manager")) {
-            managerDataManager.setFilePath(filePath);
-            success = managerDataManager.saveManagerData();
-        }
-        // For officers
-        else if (filePath.contains("Officer")) {
-            success = officerDataManager.saveOfficerData();
-        }
-        // For applicants
-        else if (filePath.contains("Applicant")) {
-            applicantDataManager.setFilePath(filePath);
-            success = applicantDataManager.writeApplicants(applicantDataManager.readAllApplicants());
-        }
-        
-        return success;
     }
 }

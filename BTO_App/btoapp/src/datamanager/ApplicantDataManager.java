@@ -7,9 +7,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import model.Applicant;
 import utils.FilePathConfig;
 
@@ -38,24 +36,6 @@ public class ApplicantDataManager {
      * @param filePath The path to the applicant data file
      */
     public ApplicantDataManager(String filePath) {
-        this.filePath = filePath;
-    }
-    
-    /**
-     * Gets the current file path being used.
-     * 
-     * @return The file path
-     */
-    public String getFilePath() {
-        return filePath;
-    }
-    
-    /**
-     * Sets a new file path for the applicant data file.
-     * 
-     * @param filePath The new file path
-     */
-    public void setFilePath(String filePath) {
         this.filePath = filePath;
     }
     
@@ -132,23 +112,6 @@ public class ApplicantDataManager {
     }
     
     /**
-     * Adds a new applicant to the applicant data file.
-     * 
-     * @param applicant The applicant to add
-     * @return true if the applicant was added successfully, false otherwise
-     */
-    public boolean addApplicant(Applicant applicant) {
-        if (findApplicantByNRIC(applicant.getNric()) != null) {
-            return false; // Applicant with this NRIC already exists
-        }
-        
-        List<Applicant> applicants = readAllApplicants();
-        applicants.add(applicant);
-        
-        return writeApplicants(applicants);
-    }
-    
-    /**
      * Updates an existing applicant in the applicant data file.
      * 
      * @param applicant The applicant to update
@@ -160,25 +123,6 @@ public class ApplicantDataManager {
         for (int i = 0; i < applicants.size(); i++) {
             if (applicants.get(i).getNric().equals(applicant.getNric())) {
                 applicants.set(i, applicant);
-                return writeApplicants(applicants);
-            }
-        }
-        
-        return false; // Applicant not found
-    }
-    
-    /**
-     * Deletes an applicant from the applicant data file.
-     * 
-     * @param nric The NRIC of the applicant to delete
-     * @return true if the applicant was deleted successfully, false otherwise
-     */
-    public boolean deleteApplicant(String nric) {
-        List<Applicant> applicants = readAllApplicants();
-        
-        for (int i = 0; i < applicants.size(); i++) {
-            if (applicants.get(i).getNric().equals(nric)) {
-                applicants.remove(i);
                 return writeApplicants(applicants);
             }
         }
@@ -223,54 +167,5 @@ public class ApplicantDataManager {
             return false;
         }
     }
-    
-    /**
-     * Updates the password for an applicant.
-     * 
-     * @param nric The NRIC of the applicant
-     * @param newPassword The new password
-     * @return true if the password was updated successfully, false otherwise
-     */
-    public boolean updatePassword(String nric, String newPassword) {
-        Applicant applicant = findApplicantByNRIC(nric);
-        
-        if (applicant != null) {
-            applicant.changePassword(newPassword);
-            return updateApplicant(applicant);
-        }
-        
-        return false;
-    }
-    
-    /**
-     * Validates the NRIC format.
-     * 
-     * @param nric The NRIC to validate
-     * @return true if the NRIC is valid, false otherwise
-     */
-    private boolean validateNRICFormat(String nric) {
-        if (nric == null) {
-            return false;
-        }
-        
-        // NRIC should start with S or T, followed by 7 digits, and end with a letter
-        return nric.matches("^[ST]\\d{7}[A-Z]$");
-    }
 
-    /**
-     * Gets a map of all applicants by NRIC.
-     * 
-     * @return A map of applicants by NRIC
-     */
-    public Map<String, Applicant> getAllApplicantsMap() {
-        List<Applicant> applicants = readAllApplicants();
-        Map<String, Applicant> applicantMap = new HashMap<>();
-        
-        for (Applicant app : applicants) {
-            applicantMap.put(app.getNric().trim(), app);
-        }
-        
-        System.out.println("DEBUG: getAllApplicantsMap returning " + applicantMap.size() + " applicants");
-        return applicantMap;
-    }
 }

@@ -1,8 +1,7 @@
 package controller.interfaces;
 
-import java.util.List;
-
 import enquiry.Enquiry;
+import java.util.List;
 import model.Applicant;
 import model.HDBManager;
 import model.HDBOfficer;
@@ -64,14 +63,6 @@ public interface IEnquiryController {
      * @return true if the reply was successful, false otherwise
      */
     boolean replyToEnquiryAsManager(String enquiryId, String replyText, HDBManager manager);
-    
-    /**
-     * Gets an enquiry by its ID.
-     * 
-     * @param enquiryId The ID of the enquiry to retrieve
-     * @return The requested enquiry if found, null otherwise
-     */
-    Enquiry getEnquiryById(String enquiryId);
     
     /**
      * Gets all enquiries by a specific applicant.

@@ -4,12 +4,12 @@ import controller.AuthenticationController;
 import java.util.Scanner;
 import model.User;
 import view.abstracts.ARenderView;
-import view.interfaces.IBTOView;
+import view.interfaces.ViewInterface;
 
 /**
  * View for changing user password.
  */
-public class PasswordChangeView extends ARenderView implements IBTOView {
+public class PasswordChangeView extends ARenderView implements ViewInterface{
     private User currentUser;
     private Scanner scanner;
     private AuthenticationController authController;
@@ -24,8 +24,7 @@ public class PasswordChangeView extends ARenderView implements IBTOView {
         this.authController=authcontroller;
         this.scanner = new Scanner(System.in);
     }
-    
-    @Override
+
     public void display() {
         printHeader("CHANGE PASSWORD");
         
@@ -51,17 +50,6 @@ public class PasswordChangeView extends ARenderView implements IBTOView {
         } else {
             showError("Failed to change password. Please check your current password.");
         }
-    }
-    
-    @Override
-    public void refreshData() {
-        // Nothing to refresh
-    }
-    
-    @Override
-    public boolean handleNavigation(int option) {
-        // No navigation options
-        return false;
     }
     
     @Override

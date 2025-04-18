@@ -17,12 +17,12 @@ import model.Project;
 import model.User;
 import model.enums.FlatType;
 import view.abstracts.ARenderView;
-import view.interfaces.IBTOView;
+import view.interfaces.ViewInterface;
 
 /**
  * View for project-related operations in the BTO Management System.
  */
-public class ProjectView extends ARenderView implements IBTOView {
+public class ProjectView extends ARenderView implements ViewInterface{
     
     private User currentUser;
     private ProjectController projectController;
@@ -47,8 +47,6 @@ public class ProjectView extends ARenderView implements IBTOView {
             this.scanner = new Scanner(System.in);
     }
 
-    
-    @Override
     public void display() {
         if (currentUser instanceof Applicant) {
             displayProjectsForApplicant((Applicant) currentUser);
@@ -985,17 +983,6 @@ public class ProjectView extends ARenderView implements IBTOView {
         } else {
             showMessage("Application cancelled.");
         }
-    }
-    
-    @Override
-    public void refreshData() {
-        // Refresh data if needed
-    }
-    
-    @Override
-    public boolean handleNavigation(int option) {
-        // Not needed for this view
-        return true;
     }
     
     @Override

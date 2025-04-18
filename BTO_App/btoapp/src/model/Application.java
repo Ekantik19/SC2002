@@ -65,24 +65,6 @@ public class Application extends AApplication {
     }
     
     /**
-     * Calculates the days remaining until the application period closes.
-     * 
-     * @return the number of days remaining, or 0 if the period has closed
-     */
-    public int getDaysRemainingUntilClosing() {
-        Date now = new Date();
-        Date closingDate = getProject().getApplicationClosingDate();
-        
-        if (now.after(closingDate)) {
-            return 0;
-        }
-        
-        // Calculate days difference
-        long diffInMillis = closingDate.getTime() - now.getTime();
-        return (int) (diffInMillis / (1000 * 60 * 60 * 24));
-    }
-    
-    /**
      * Sets the booking date for this application.
      * 
      * @param bookingDate The date when the flat was booked
@@ -98,44 +80,5 @@ public class Application extends AApplication {
      */
     public Date getBookingDate() {
         return this.bookingDate;
-    }
-    
-    /**
-     * Returns a detailed string representation of the application.
-     * 
-     * @return A string with detailed application information
-     */
-    public String getDetailedInfo() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Application ID: ").append(getApplicationId()).append("\n");
-        sb.append("Applicant: ").append(getApplicant().getName()).append(" (").append(getApplicant().getNric()).append(")\n");
-        sb.append("Project: ").append(getProject().getProjectName()).append("\n");
-        sb.append("Neighborhood: ").append(getProject().getNeighborhood()).append("\n");
-        sb.append("Flat Type: ").append(getSelectedFlatType().getDisplayName()).append("\n");
-        sb.append("Application Date: ").append(getApplicationDate()).append("\n");
-        sb.append("Status: ").append(getStatus().getDisplayName()).append("\n");
-        
-        if (getStatus() == ApplicationStatus.BOOKED && bookingDate != null) {
-            sb.append("Booking Date: ").append(new java.text.SimpleDateFormat("dd/MM/yyyy").format(bookingDate)).append("\n");
-        }
-        
-        if (isWithdrawalRequested()) {
-            sb.append("Withdrawal Requested: Yes\n");
-        }
-        
-        return sb.toString();
-    }
-    
-    /**
-     * Returns a string representation of the application.
-     * 
-     * @return A string with basic application information
-     */
-    @Override
-    public String toString() {
-        return "Application ID: " + getApplicationId() + 
-               ", Project: " + getProject().getProjectName() + 
-               ", Flat Type: " + getSelectedFlatType().getDisplayName() + 
-               ", Status: " + getStatus().getDisplayName();
     }
 }

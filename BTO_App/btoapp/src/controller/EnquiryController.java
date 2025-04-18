@@ -214,11 +214,6 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
     }
     
     @Override
-    public Enquiry getEnquiryById(String enquiryId) {
-        return enquiryDataManager.getEnquiryById(enquiryId);
-    }
-    
-    @Override
     public List<Enquiry> getEnquiriesByApplicant(Applicant applicant) {
         if (applicant == null) {
             System.out.println("DEBUG: Cannot get enquiries - applicant is null");
