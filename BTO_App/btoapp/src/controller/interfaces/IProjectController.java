@@ -2,7 +2,6 @@ package controller.interfaces;
 
 import java.util.Date;
 import java.util.List;
-
 import model.Applicant;
 import model.HDBManager;
 import model.HDBOfficer;
@@ -104,22 +103,6 @@ public interface IProjectController {
      * @return A list of projects managed by the specified manager
      */
     List<Project> getProjectsByManager(HDBManager manager);
-    
-    /**
-     * Gets projects by neighborhood.
-     * 
-     * @param neighborhood The neighborhood to get projects for
-     * @return A list of projects in the specified neighborhood
-     */
-    List<Project> getProjectsByNeighborhood(String neighborhood);
-    
-    /**
-     * Gets projects by flat type.
-     * 
-     * @param flatType The flat type to get projects for
-     * @return A list of projects offering the specified flat type
-     */
-    List<Project> getProjectsByFlatType(FlatType flatType);
     
     /**
      * Gets projects visible to an applicant.

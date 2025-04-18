@@ -354,42 +354,6 @@ public class ProjectController extends ABaseController implements IProjectContro
     }
     
     @Override
-    public List<Project> getProjectsByNeighborhood(String neighborhood) {
-        // Validate input
-        if (!validateNotNullOrEmpty(neighborhood, "Neighborhood")) {
-            return new ArrayList<>();
-        }
-        
-        List<Project> projects = projectDataManager.getAllProjects().stream()
-            .filter(p -> p.getNeighborhood().equalsIgnoreCase(neighborhood))
-            .collect(Collectors.toList());
-        
-        System.out.println("DEBUG: getProjectsByNeighborhood found " + projects.size() + 
-                          " projects in " + neighborhood);
-        
-        return projects;
-    }
-    
-    @Override
-    public List<Project> getProjectsByFlatType(FlatType flatType) {
-        // Validate input
-        if (flatType == null) {
-            System.out.println("DEBUG: getProjectsByFlatType received null flatType");
-            return new ArrayList<>();
-        }
-        
-        List<Project> projects = projectDataManager.getAllProjects().stream()
-            .filter(p -> p.getFlatTypeInfoList().stream()
-                .anyMatch(info -> info.getFlatType() == flatType && info.getNumberOfUnits() > 0))
-            .collect(Collectors.toList());
-        
-        System.out.println("DEBUG: getProjectsByFlatType found " + projects.size() + 
-                          " projects with " + flatType.getDisplayName());
-        
-        return projects;
-    }
-    
-    @Override
     public List<Project> getVisibleProjectsForApplicant(Applicant applicant) {
 
         // For HDB Officers, print debug info about their assignments
