@@ -25,6 +25,8 @@ public class MainMenuView extends ARenderView implements IBTOView {
     private MenuBuilder menuBuilder;
     private Map<Integer, MenuAction> menuActions;
     private Scanner scanner;
+    private AuthenticationController authController;
+    private BookingController bookingController;
     
     /**
      * Constructor for MainMenuView.
@@ -38,8 +40,12 @@ public class MainMenuView extends ARenderView implements IBTOView {
                        ProjectController projectController,
                        ApplicationController applicationController,
                        EnquiryController enquiryController,
-                       ManagerController managerController) {
+                       ManagerController managerController,
+                       AuthenticationController authController,
+                       BookingController bookingController) {
         this.currentUser = currentUser;
+        this.authController=authController;
+        this.bookingController=bookingController;
         this.scanner = new Scanner(System.in);
         
         // Initialize menu builder based on user role
@@ -51,7 +57,9 @@ public class MainMenuView extends ARenderView implements IBTOView {
             projectController, 
             applicationController, 
             enquiryController,
-            managerController
+            managerController,
+            authController,
+            bookingController
         );
         
         // Build menu actions

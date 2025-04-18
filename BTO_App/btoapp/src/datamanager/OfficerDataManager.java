@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import model.HDBOfficer;
 import utils.FilePathConfig;
 
@@ -74,7 +73,7 @@ public class OfficerDataManager {
                 }
                 
                 String name = parts[0];
-                String nric = parts[1];
+                String nric = parts[1].toUpperCase(); // Convert NRIC to uppercase
                 
                 // Parse age
                 int age;
@@ -91,7 +90,7 @@ public class OfficerDataManager {
                 // Create HDBOfficer object
                 HDBOfficer officer = new HDBOfficer(name, nric, age, maritalStatus, password);
                 
-                // Add to map
+                // Add to map using uppercase NRIC
                 officersMap.put(nric, officer);
                 System.out.println("DEBUG: Loaded officer: " + name + ", NRIC: " + nric);
             }
@@ -155,12 +154,36 @@ public class OfficerDataManager {
      * @return true if the officer was successfully updated, false otherwise
      */
     public boolean updateOfficer(HDBOfficer officer) {
-        if (officer == null || !officersMap.containsKey(officer.getNric())) {
+        if (officer == null || !validateNRICFormat(officer.getNric())) {
+            System.out.println("DEBUG: Invalid officer or NRIC format");
             return false;
         }
         
-        officersMap.put(officer.getNric(), officer);
+        String nric = officer.getNric().toUpperCase();
+        
+        // If the officer doesn't exist, add a log message
+        if (!officersMap.containsKey(nric)) {
+            System.out.println("DEBUG: Officer not found in map. Adding new officer: " + nric);
+        }
+        
+        // Always update/add the officer to the map
+        officersMap.put(nric, officer);
         return true;
+    }
+
+    /**
+     * Validates NRIC format.
+     * 
+     * @param nric The NRIC to validate
+     * @return true if the NRIC is valid, false otherwise
+     */
+    private boolean validateNRICFormat(String nric) {
+        if (nric == null) {
+            return false;
+        }
+        
+        // NRIC should start with S or T, followed by 7 digits, and end with a letter
+        return nric.matches("^[ST]\\d{7}[A-Z]$");
     }
     
     /**

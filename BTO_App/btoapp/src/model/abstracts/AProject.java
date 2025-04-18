@@ -3,7 +3,6 @@ package model.abstracts;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
 import model.HDBManager;
 import model.HDBOfficer;
 import model.enums.FlatType;
@@ -61,6 +60,9 @@ public abstract class AProject {
         public void decrementUnits() {
             if (numberOfUnits > 0) {
                 numberOfUnits--;
+                System.out.println("DEBUG: Decremented units. New count: " + numberOfUnits);
+            } else {
+                System.out.println("DEBUG: Cannot decrement. No units available.");
             }
         }
         
@@ -130,14 +132,25 @@ public abstract class AProject {
      */
     public boolean decrementUnit(FlatType flatType) {
         for (FlatTypeInfo info : flatTypeInfoList) {
-            if (info.getFlatType() == flatType && info.getNumberOfUnits() > 0) {
-                info.decrementUnits();
-                return true;
+            if (info.getFlatType() == flatType) {
+                System.out.println("DEBUG: Found flat type " + flatType + 
+                                   " with current units: " + info.getNumberOfUnits());
+                
+                if (info.getNumberOfUnits() > 0) {
+                    info.decrementUnits();
+                    System.out.println("DEBUG: Successfully decremented units. New count: " + 
+                                       info.getNumberOfUnits());
+                    return true;
+                } else {
+                    System.out.println("DEBUG: No available units for " + flatType);
+                    return false;
+                }
             }
         }
+        
+        System.out.println("DEBUG: Flat type " + flatType + " not found in project");
         return false;
     }
-    
     /**
      * Adds an officer to the project if there are slots available.
      * 

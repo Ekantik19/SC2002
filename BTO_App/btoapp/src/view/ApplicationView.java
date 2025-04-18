@@ -1,7 +1,6 @@
 package view;
 
-import controller.ApplicationController;
-import controller.ProjectController;
+import controller.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +25,7 @@ public class ApplicationView extends ARenderView implements IBTOView {
     private ApplicationController applicationController;
     private Scanner scanner;
     private ProjectController projectController;
+    private BookingController bookingController;
     
     /**
      * Constructor for ApplicationView.
@@ -34,10 +34,11 @@ public class ApplicationView extends ARenderView implements IBTOView {
      * @param applicationController Controller for application operations
      */
     public ApplicationView(User currentUser, ApplicationController applicationController, 
-                      ProjectController projectController) {
+                      ProjectController projectController, BookingController bookingController) {
     this.currentUser = currentUser;
     this.applicationController = applicationController;
     this.projectController = projectController;
+    this.bookingController=bookingController;
     this.scanner = new Scanner(System.in);
 }
     
@@ -279,10 +280,25 @@ public class ApplicationView extends ARenderView implements IBTOView {
         
         Project project = officer.getAssignedProject();
         printHeader("PROCESS FLAT BOOKING: " + project.getProjectName());
+
+        System.out.println("DEBUG: Processing flat booking for project: " + project.getProjectName());
+
+        // Get all applications for the project
+        List<Application> allApplications = applicationController.getApplicationsByProject(project);
+        System.out.println("DEBUG: Total applications in project: " + allApplications.size());
+        
+        // Log all application details
+        for (Application app : allApplications) {
+            System.out.println("DEBUG: Application - ID: " + app.getApplicationId() + 
+                            ", Applicant: " + app.getApplicant().getName() + 
+                            ", Status: " + app.getStatus());
+        }
         
         // First, show all SUCCESSFUL applications for the project
         List<Application> successfulApplications = applicationController.getApplicationsByStatus(
             project, ApplicationStatus.SUCCESSFUL);
+
+        System.out.println("DEBUG: Successful applications: " + successfulApplications.size());
         
         if (successfulApplications.isEmpty()) {
             showMessage("No successful applications found that are eligible for booking.");
@@ -327,7 +343,7 @@ public class ApplicationView extends ARenderView implements IBTOView {
         int bookingChoice = getIntInput();
         
         if (bookingChoice == 1) {
-            boolean booked = officer.bookFlat(selectedApplication);
+            boolean booked = bookingController.bookFlat(selectedApplication.getApplicationId(), officer);
             
             if (booked) {
                 showMessage("Flat booking processed successfully.");

@@ -1,2 +1,6 @@
 Applicant NRIC	Project Name	Application Status	Flat Type	Booking Date
-T1234567J	Acacia Breeze	PENDING	2-Room	
+S1234567A	Acacia Breeze	PENDING	2-Room	
+S9876543C	Acacia Breeze	UNSUCCESSFUL	3-Room
+S3456789E	Acacia Breeze	BOOKED	2-Room	20/03/2025
+T2109876H	Rainbow Cruise	BOOKED	2-Room	18/04/2025
+T7654321B	Acacia Breeze	SUCCESSFUL	3-Room	

@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import model.HDBManager;
 import utils.FilePathConfig;
 
@@ -232,16 +231,18 @@ public class ManagerDataManager {
      */
     public boolean updateManager(HDBManager manager) {
         if (manager == null || !validateNRICFormat(manager.getNric())) {
+            System.out.println("DEBUG: Invalid manager or NRIC format");
             return false;
         }
         
         String nric = manager.getNric().toUpperCase();
         
-        // Check if manager exists
+        // If the manager doesn't exist, add a log message
         if (!managerMap.containsKey(nric)) {
-            return false;
+            System.out.println("DEBUG: Manager not found in map. Adding new manager: " + nric);
         }
         
+        // Always update/add the manager to the map
         managerMap.put(nric, manager);
         return true;
     }

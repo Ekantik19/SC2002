@@ -108,6 +108,18 @@ public class ProjectController extends ABaseController implements IProjectContro
         return project;
     }
     
+    /**
+     * Updates an existing project with date overlap prevention.
+     * 
+     * @param projectId The ID (name) of the project to update
+     * @param projectName The new name of the project
+     * @param neighborhood The new neighborhood of the project
+     * @param openingDate The new application opening date
+     * @param closingDate The new application closing date
+     * @param officerSlots The new number of officer slots
+     * @param manager The manager updating the project
+     * @return true if the project was successfully updated, false otherwise
+     */
     @Override
     public boolean updateProject(String projectId, String projectName, 
                                 String neighborhood, Date openingDate, 
@@ -118,6 +130,7 @@ public class ProjectController extends ABaseController implements IProjectContro
             !validateNotNullOrEmpty(projectName, "Project Name") ||
             !validateNotNullOrEmpty(neighborhood, "Neighborhood") ||
             openingDate == null || closingDate == null || manager == null) {
+            System.out.println("DEBUG: Invalid input parameters for project update");
             return false;
         }
         
@@ -128,14 +141,30 @@ public class ProjectController extends ABaseController implements IProjectContro
             return false;
         }
         
-        System.out.println("DEBUG: Updating project: " + projectId);
+        // Check if the manager is authorized to update this project
+        if (project.getManagerInCharge() == null || 
+            !project.getManagerInCharge().getNric().equals(manager.getNric())) {
+            System.out.println("DEBUG: Manager not authorized to update this project");
+            return false;
+        }
         
-        // Handle project update directly if manager method fails
+        // Check for date overlaps with other projects managed by this manager
+        List<Project> managerProjects = getProjectsByManager(manager);
+        boolean hasOverlap = managerProjects.stream()
+            .filter(p -> !p.getProjectName().equals(projectId)) // Exclude current project
+            .anyMatch(p -> isOverlappingPeriod(p, openingDate, closingDate));
+        
+        if (hasOverlap) {
+            System.out.println("DEBUG: Cannot update project with overlapping dates");
+            return false;
+        }
+        
+        // Attempt to update the project
         boolean updated = false;
         try {
             // Delegate update to manager
             updated = manager.updateProject(project, projectName, neighborhood, 
-                                           openingDate, closingDate, officerSlots);
+                                        openingDate, closingDate, officerSlots);
         } catch (Exception e) {
             System.out.println("DEBUG: Error updating project through manager: " + e.getMessage());
             

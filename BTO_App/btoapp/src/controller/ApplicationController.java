@@ -156,45 +156,78 @@ public class ApplicationController extends ABaseController implements IApplicati
     
     @Override
     public List<Application> getApplicationsByStatus(Project project, ApplicationStatus status) {
-        // Validate input
-        if (!validateNotNull(project, "Project") || !validateNotNull(status, "Status")) {
-            return new ArrayList<>();
-        }
-        
         // Get all applications for the project
         List<Application> projectApplications = getApplicationsByProject(project);
         
+        System.out.println("DEBUG: getApplicationsByStatus - Found " + projectApplications.size() + 
+                        " applications for project " + project.getProjectName());
+        
+        // List all applications for this project with their status
+        System.out.println("DEBUG: Applications in project " + project.getProjectName() + ":");
+        for (Application app : projectApplications) {
+            System.out.println("DEBUG: - App ID: " + app.getApplicationId() + 
+                            ", Applicant: " + app.getApplicant().getName() + 
+                            " (" + app.getApplicant().getNric() + ")" +
+                            ", Status: " + app.getStatus());
+        }
+        
         // Filter by status
-        return projectApplications.stream()
+        List<Application> result = projectApplications.stream()
                 .filter(app -> app.getStatus() == status)
                 .collect(Collectors.toList());
+        
+        System.out.println("DEBUG: After filtering, found " + result.size() + 
+                        " applications with status " + status);
+        return result;
     }
-    
+
     @Override
     public boolean approveApplication(String applicationId, HDBManager manager) {
+        System.out.println("DEBUG: Starting approval of application: " + applicationId);
+        
         // Get the application and validate manager authorization
         Application application = getAndValidateManagerAuthorization(applicationId, manager);
         if (application == null) {
+            System.out.println("DEBUG: Application validation failed for: " + applicationId);
             return false;
         }
         
         // Check if there are available units for the selected flat type
         if (!application.getProject().hasAvailableUnits(application.getSelectedFlatType())) {
-            System.out.println("No available units for the selected flat type.");
+            System.out.println("DEBUG: No available units for the selected flat type.");
             return false;
         }
+        
+        // Log status before approval for debugging
+        System.out.println("DEBUG: Application status before approval: " + application.getStatus());
         
         // Approve the application
         boolean approved = application.approve();
         
-        // Update application in data manager if approval was successful
+        // Log status after approval for debugging
+        System.out.println("DEBUG: Application status after approval: " + application.getStatus());
+        
+        // Update application in memory and file if approval was successful
         if (approved) {
-            applicationDataManager.updateApplication(application);
+            System.out.println("DEBUG: Updating application " + applicationId + " in data manager with status: " + application.getStatus());
+            
+            // Update in memory
+            boolean updated = applicationDataManager.updateApplication(application);
+            System.out.println("DEBUG: In-memory update result: " + (updated ? "success" : "failed"));
+            
+            if (updated) {
+                // Use the direct file update method instead of saving all applications
+                boolean fileUpdated = applicationDataManager.updateApplicationStatusInFile(applicationId, ApplicationStatus.SUCCESSFUL);
+                System.out.println("DEBUG: File update result: " + (fileUpdated ? "success" : "failed"));
+                return fileUpdated;
+            }
+        } else {
+            System.out.println("DEBUG: Application approval failed");
         }
         
         return approved;
     }
-    
+
     @Override
     public boolean rejectApplication(String applicationId, HDBManager manager) {
         // Get the application and validate manager authorization
@@ -215,7 +248,7 @@ public class ApplicationController extends ABaseController implements IApplicati
         
         return rejected;
     }
-    
+
     @Override
     public boolean approveWithdrawal(String applicationId, HDBManager manager) {
         // Get the application and validate manager authorization
@@ -237,7 +270,14 @@ public class ApplicationController extends ABaseController implements IApplicati
         if (approved) {
             // Clear the current application reference from the applicant
             clearCurrentApplicationReference(application);
-            applicationDataManager.updateApplication(application);
+            
+            // Update in memory
+            boolean updated = applicationDataManager.updateApplication(application);
+            
+            if (updated) {
+                // Update just this application's status in the file
+                return applicationDataManager.updateApplicationStatusInFile(applicationId, ApplicationStatus.UNSUCCESSFUL);
+            }
         }
         
         return approved;

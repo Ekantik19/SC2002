@@ -1,7 +1,7 @@
 package view;
 
+import controller.AuthenticationController;
 import java.util.Scanner;
-
 import model.User;
 import view.abstracts.ARenderView;
 import view.interfaces.IBTOView;
@@ -12,14 +12,16 @@ import view.interfaces.IBTOView;
 public class PasswordChangeView extends ARenderView implements IBTOView {
     private User currentUser;
     private Scanner scanner;
+    private AuthenticationController authController;
     
     /**
      * Constructor for PasswordChangeView.
      * 
      * @param currentUser The currently logged-in user
      */
-    public PasswordChangeView(User currentUser) {
+    public PasswordChangeView(User currentUser,AuthenticationController authcontroller) {
         this.currentUser = currentUser;
+        this.authController=authcontroller;
         this.scanner = new Scanner(System.in);
     }
     
@@ -42,7 +44,7 @@ public class PasswordChangeView extends ARenderView implements IBTOView {
         }
         
         // Call model to change password
-        boolean success = currentUser.changePassword(currentPassword, newPassword);
+        boolean success = authController.changePassword(currentUser.getNric(), currentPassword, newPassword);
         
         if (success) {
             showMessage("Password changed successfully.");

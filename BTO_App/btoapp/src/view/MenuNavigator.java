@@ -1,9 +1,6 @@
 package view;
 
-import controller.ApplicationController;
-import controller.EnquiryController;
-import controller.ManagerController;
-import controller.ProjectController;
+import controller.*;
 import java.util.HashMap;
 import java.util.Map;
 import model.Applicant;
@@ -21,6 +18,8 @@ public class MenuNavigator {
     private ApplicationController applicationController;
     private EnquiryController enquiryController;
     private ManagerController managerController;
+    private AuthenticationController authController;
+    private BookingController bookingController;
     
     private Map<Integer, MenuAction> applicantActions;
     private Map<Integer, MenuAction> officerActions;
@@ -38,24 +37,40 @@ public class MenuNavigator {
                          ProjectController projectController,
                          ApplicationController applicationController,
                          EnquiryController enquiryController,
-                         ManagerController managerController) {
+                         ManagerController managerController,
+                         AuthenticationController authController,
+                         BookingController bookingController) {
         this.currentUser = currentUser;
         this.projectController = projectController;
         this.applicationController = applicationController;
         this.enquiryController = enquiryController;
         this.managerController=managerController;
+        this.authController=authController;
+        this.bookingController=bookingController;
         
         // Initialize view instances
         ProjectView projectView = new ProjectView(currentUser, projectController, applicationController,managerController);
         //ApplicationView applicationView = new ApplicationView(currentUser, applicationController);
-        ApplicationView applicationView = new ApplicationView(currentUser, applicationController, projectController);
+        ApplicationView applicationView = new ApplicationView(currentUser, applicationController, projectController, bookingController);
         EnquiryView enquiryView = new EnquiryView(currentUser, enquiryController, projectController);
-        PasswordChangeView passwordView = new PasswordChangeView(currentUser);
+        PasswordChangeView passwordView = new PasswordChangeView(currentUser,authController);
         
         // Initialize action maps
-        initializeApplicantActions(projectView, applicationView, enquiryView, passwordView);
-        initializeOfficerActions(projectView, applicationView, enquiryView, passwordView);
-        initializeManagerActions(projectView, applicationView, enquiryView, passwordView);
+        if (currentUser instanceof HDBManager) {
+            initializeManagerActions(projectView, applicationView, enquiryView, passwordView);
+            officerActions = new HashMap<>(); // Prevent null pointer
+            applicantActions = new HashMap<>(); // Prevent null pointer
+        } else if (currentUser instanceof HDBOfficer) {
+            initializeOfficerActions(projectView, applicationView, enquiryView, passwordView);
+            managerActions = new HashMap<>(); // Prevent null pointer
+            applicantActions = new HashMap<>(); // Prevent null pointer
+        } else if (currentUser instanceof Applicant) {
+            initializeApplicantActions(projectView, applicationView, enquiryView, passwordView);
+            managerActions = new HashMap<>(); // Prevent null pointer
+            officerActions = new HashMap<>(); // Prevent null pointer
+        } else {
+            throw new IllegalArgumentException("Unknown user type: " + currentUser.getClass().getSimpleName());
+        }
     }
     
     /**
@@ -106,6 +121,7 @@ public class MenuNavigator {
                                 EnquiryView enquiryView,
                                 PasswordChangeView passwordView) {
         officerActions = new HashMap<>();
+        HDBOfficer officer = (HDBOfficer) currentUser;
 
         officerActions.put(1, () -> {
             projectView.display();
@@ -142,31 +158,26 @@ public class MenuNavigator {
             return true;
         });
 
+        // Change password option is now consistently at option 8
         officerActions.put(8, () -> {
-            HDBOfficer officer = (HDBOfficer) currentUser;
-            if (officer.hasActiveApplication()) {
-            applicationView.displayMyApplication();
-            } else {
-            System.out.println("\n!!! ERROR: You don't have an active application.");
-            }
-            return true;
-        });
-
-        officerActions.put(9, () -> {
-            HDBOfficer officer = (HDBOfficer) currentUser;
-            if (officer.hasActiveApplication()) {
-            applicationView.displayWithdrawalRequest();
-            } else {
-            System.out.println("\n!!! ERROR: You don't have an active application.");
-            }
-            return true;
-        });
-
-        officerActions.put(10, () -> {
             passwordView.display();
             return true;
         });
+
+        // Add application-specific options if the officer has any application
+        // NOTE: Changed from hasActiveApplication() to check for any application
+        if (officer.getCurrentApplication() != null) {
+            officerActions.put(9, () -> {
+            applicationView.displayMyApplication();
+            return true;
+        });
+
+            officerActions.put(10, () -> {
+            applicationView.displayWithdrawalRequest();
+            return true;
+        });
     }
+}
     
     /**
      * Initializes actions for HDB Manager users.
@@ -245,21 +256,19 @@ public class MenuNavigator {
         System.out.println("DEBUG: User role: " + currentUser.getRole());
         System.out.println("DEBUG: User class: " + currentUser.getClass().getSimpleName());
         
-        if (currentUser instanceof HDBManager) {
-            MenuAction action = managerActions.get(option);
-            if (action != null) {
-                return action.execute();
-            }
-        } else if (currentUser instanceof HDBOfficer) {
-            MenuAction action = officerActions.get(option);
-            if (action != null) {
-                return action.execute();
-            }
+        MenuAction action = null;
+        
+        if (currentUser instanceof HDBOfficer) {
+            // For officers, always use the mapped action at the given option
+            action = officerActions.get(option);
+        } else if (currentUser instanceof HDBManager) {
+            action = managerActions.get(option);
         } else if (currentUser instanceof Applicant) {
-            MenuAction action = applicantActions.get(option);
-            if (action != null) {
-                return action.execute();
-            }
+            action = applicantActions.get(option);
+        }
+        
+        if (action != null) {
+            return action.execute();
         }
         
         System.out.println("\n!!! ERROR: Invalid option. Please try again.");

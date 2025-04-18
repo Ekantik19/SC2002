@@ -1,7 +1,6 @@
 package model.abstracts;
 
 import java.util.Date;
-
 import model.Applicant;
 import model.Project;
 import model.enums.ApplicationStatus;
@@ -48,6 +47,7 @@ public abstract class AApplication {
      * @return true if the application was successfully approved, false otherwise
      */
     public boolean approve() {
+        // Only change status if it's currently PENDING
         if (status == ApplicationStatus.PENDING) {
             status = ApplicationStatus.SUCCESSFUL;
             return true;
@@ -74,15 +74,14 @@ public abstract class AApplication {
      * @return true if the flat was successfully booked, false otherwise
      */
     public boolean bookFlat() {
+        // Only change status if the application is already SUCCESSFUL
         if (status == ApplicationStatus.SUCCESSFUL) {
-            boolean decremented = project.decrementUnit(selectedFlatType);
-            if (decremented) {
-                status = ApplicationStatus.BOOKED;
-                return true;
-            }
+            status = ApplicationStatus.BOOKED;
+            return true;
         }
         return false;
     }
+    
     
     /**
      * Requests a withdrawal of the application.

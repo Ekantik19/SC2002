@@ -746,7 +746,7 @@ public class ProjectView extends ARenderView implements IBTOView {
                 int action = getIntInput();
                 
                 if (action == 1) {
-                    boolean approved = manager.approveOfficerRegistration(selectedOfficer);
+                    boolean approved = managerController.approveOfficerRegistration(selectedOfficer, manager);
                     
                     if (approved) {
                         showMessage("Officer registration approved successfully.");

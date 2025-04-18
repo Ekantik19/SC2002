@@ -64,43 +64,6 @@ public class ApplicantDataManager {
      * 
      * @return A list of Applicant objects
      */
-    // public List<Applicant> readAllApplicants() {
-    //     List<Applicant> applicants = new ArrayList<>();
-
-    //     System.out.println("Attempting to read applicants from: " + filePath);
-    //     File file = new File(filePath);
-    //     System.out.println("File exists: " + file.exists());
-    //     System.out.println("Current working directory: " + System.getProperty("user.dir"));
-        
-    //     try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-    //         String line;
-    //         boolean isHeader = true;
-            
-    //         while ((line = reader.readLine()) != null) {
-    //             if (isHeader) {
-    //                 isHeader = false;
-    //                 continue; // Skip the header row
-    //             }
-                
-    //             String[] parts = line.split(DELIMITER);
-    //             if (parts.length >= 5) {
-    //                 String name = parts[0];
-    //                 String nric = parts[1];
-    //                 int age = Integer.parseInt(parts[2]);
-    //                 String maritalStatus = parts[3];
-    //                 String password = parts[4];
-                    
-    //                 Applicant applicant = new Applicant(name, nric, age, maritalStatus, password);
-    //                 applicants.add(applicant);
-    //             }
-    //         }
-    //     } catch (IOException e) {
-    //         System.out.println("Error reading applicant data: " + e.getMessage());
-    //     }
-        
-    //     return applicants;
-    // }
-
     public List<Applicant> readAllApplicants() {
         List<Applicant> applicants = new ArrayList<>();
         
@@ -229,7 +192,9 @@ public class ApplicantDataManager {
      * @param applicants The list of applicants to write
      * @return true if the applicants were written successfully, false otherwise
      */
-    private boolean writeApplicants(List<Applicant> applicants) {
+    public boolean writeApplicants(List<Applicant> applicants) {
+        System.out.println("DEBUG: Writing " + applicants.size() + " applicants to file: " + filePath);
+        
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
             // Write header
             writer.write("Name" + DELIMITER + "NRIC" + DELIMITER + "Age" + DELIMITER + 
@@ -238,6 +203,8 @@ public class ApplicantDataManager {
             
             // Write applicant data
             for (Applicant applicant : applicants) {
+                System.out.println("DEBUG: Writing applicant: " + applicant.getName() + 
+                                  ", Password: " + applicant.getPassword());
                 writer.write(
                     applicant.getName() + DELIMITER +
                     applicant.getNric() + DELIMITER +
@@ -248,9 +215,11 @@ public class ApplicantDataManager {
                 writer.newLine();
             }
             
+            System.out.println("DEBUG: Successfully wrote applicants to file");
             return true;
         } catch (IOException e) {
             System.out.println("Error writing applicant data: " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }

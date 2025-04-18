@@ -4,6 +4,8 @@ import controller.abstracts.ABaseController;
 import controller.interfaces.IBookingController;
 import datamanager.ApplicationDataManager;
 import datamanager.ProjectDataManager;
+import java.util.Date;
+import model.Applicant;
 import model.Application;
 import model.HDBOfficer;
 import model.Project;
@@ -65,22 +67,29 @@ public class BookingController extends ABaseController implements IBookingContro
             System.out.println("No available units for the selected flat type.");
             return false;
         }
+
+        System.out.println("DEBUG: Attempting to book flat for application: " + applicationId);
         
         // Book the flat
         boolean booked = application.bookFlat();
         
         if (booked) {
+
+            application.setBookingDate(new Date());
             // Update applicant's booked flat information
-            application.getApplicant().setBookedFlatType(flatType);
-            application.getApplicant().setBookedProject(project);
+            Applicant applicant = application.getApplicant();
+            applicant.setBookedFlatType(flatType);
+            applicant.setBookedProject(project);
             
             // Update flat availability
             updateFlatAvailability(project.getProjectName(), flatType);
             
-            // Save application changes
-            applicationDataManager.updateApplication(application);
+            // Save changes
+            applicationDataManager.updateAndSaveApplication(application);
+            projectDataManager.updateProject(project);
         }
         
+        System.out.println("DEBUG: Booking result: " + booked);
         return booked;
     }
     
@@ -164,7 +173,7 @@ public class BookingController extends ABaseController implements IBookingContro
         boolean updated = false;
         for (Project.FlatTypeInfo flatTypeInfo : project.getFlatTypeInfoList()) {
             if (flatTypeInfo.getFlatType() == flatType && flatTypeInfo.getNumberOfUnits() > 0) {
-                // Create new flat type info with decremented units
+                // Decrement units by 1, not all units
                 int newUnits = flatTypeInfo.getNumberOfUnits() - 1;
                 double price = flatTypeInfo.getSellingPrice();
                 

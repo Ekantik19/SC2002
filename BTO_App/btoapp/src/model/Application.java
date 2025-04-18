@@ -13,6 +13,8 @@ import model.enums.FlatType;
  * @version 1.0
  */
 public class Application extends AApplication {
+
+    private Date bookingDate;
     
     /**
      * Constructor for Application.
@@ -81,6 +83,24 @@ public class Application extends AApplication {
     }
     
     /**
+     * Sets the booking date for this application.
+     * 
+     * @param bookingDate The date when the flat was booked
+     */
+    public void setBookingDate(Date bookingDate) {
+        this.bookingDate = bookingDate;
+    }
+
+    /**
+     * Gets the booking date for this application.
+     * 
+     * @return The booking date, or null if not booked
+     */
+    public Date getBookingDate() {
+        return this.bookingDate;
+    }
+    
+    /**
      * Returns a detailed string representation of the application.
      * 
      * @return A string with detailed application information
@@ -94,6 +114,10 @@ public class Application extends AApplication {
         sb.append("Flat Type: ").append(getSelectedFlatType().getDisplayName()).append("\n");
         sb.append("Application Date: ").append(getApplicationDate()).append("\n");
         sb.append("Status: ").append(getStatus().getDisplayName()).append("\n");
+        
+        if (getStatus() == ApplicationStatus.BOOKED && bookingDate != null) {
+            sb.append("Booking Date: ").append(new java.text.SimpleDateFormat("dd/MM/yyyy").format(bookingDate)).append("\n");
+        }
         
         if (isWithdrawalRequested()) {
             sb.append("Withdrawal Requested: Yes\n");
