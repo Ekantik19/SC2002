@@ -150,6 +150,7 @@ public class App {
             );
 
             System.out.println("DEBUG: Initialization complete");
+           
         } catch (Exception e) {
             System.out.println("ERROR during initialization: " + e.getMessage());
             e.printStackTrace();

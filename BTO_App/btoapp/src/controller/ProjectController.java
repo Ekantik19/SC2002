@@ -3,6 +3,7 @@ package controller;
 import controller.abstracts.ABaseController;
 import controller.interfaces.IProjectController;
 import datamanager.ProjectDataManager;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -12,7 +13,6 @@ import model.HDBManager;
 import model.HDBOfficer;
 import model.Project;
 import model.enums.FlatType;
-
 /**
  * Controller for managing BTO projects in the system.
  * Implements IProjectController and extends ABaseController.
@@ -215,21 +215,96 @@ public class ProjectController extends ABaseController implements IProjectContro
             return false;
         }
         
-        // Delegate deletion to manager
-        boolean deleted = false;
+        /**
+         * IMPORTANT: Before deleting the project, directly update ApplicationList.txt
+         * to set all applications for this project to UNSUCCESSFUL
+         */
         try {
-            deleted = manager.deleteProject(project);
-        } catch (Exception e) {
-            System.out.println("DEBUG: Error deleting project through manager: " + e.getMessage());
+            System.out.println("DEBUG: Updating applications for project: " + projectId);
             
-            // Delete directly from data manager as fallback
-            deleted = projectDataManager.removeProject(projectId);
-            System.out.println("DEBUG: Project deleted directly from data manager: " + deleted);
+            // Read the application file directly
+            String applicationFilePath = utils.FilePathConfig.APPLICATION_LIST_PATH;
+            List<String> fileLines = new ArrayList<>();
+            boolean headerProcessed = false;
+            
+            try (BufferedReader reader = new BufferedReader(new FileReader(applicationFilePath))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (!headerProcessed) {
+                        // Keep the header unchanged
+                        fileLines.add(line);
+                        headerProcessed = true;
+                        continue;
+                    }
+                    
+                    // For each application line, check if it belongs to this project
+                    String[] parts = line.split("\t");
+                    if (parts.length >= 3) {
+                        String lineProjectName = parts[1].trim();
+                        
+                        // If this application is for the project being deleted,
+                        // update its status to UNSUCCESSFUL
+                        if (lineProjectName.equals(projectId)) {
+                            System.out.println("DEBUG: Found application for project " + projectId + ": " + line);
+                            
+                            // Construct updated line with UNSUCCESSFUL status
+                            StringBuilder updatedLine = new StringBuilder();
+                            updatedLine.append(parts[0]); // NRIC
+                            updatedLine.append("\t").append(parts[1]); // Project Name
+                            updatedLine.append("\t").append("UNSUCCESSFUL"); // Set status to UNSUCCESSFUL
+                            
+                            // Add remaining parts if they exist
+                            for (int i = 3; i < parts.length; i++) {
+                                updatedLine.append("\t").append(parts[i]);
+                            }
+                            
+                            // Add the updated line
+                            fileLines.add(updatedLine.toString());
+                            System.out.println("DEBUG: Updated application to UNSUCCESSFUL: " + updatedLine.toString());
+                        } else {
+                            // Keep other applications unchanged
+                            fileLines.add(line);
+                        }
+                    } else {
+                        // Add any malformed lines as-is
+                        fileLines.add(line);
+                    }
+                }
+            }
+            
+            // Write back the updated application file
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(applicationFilePath))) {
+                for (String line : fileLines) {
+                    writer.write(line);
+                    writer.newLine();
+                }
+            }
+            
+            System.out.println("DEBUG: Successfully updated applications in file for deleted project");
+            
+        } catch (IOException e) {
+            System.out.println("ERROR: Failed to update applications for deleted project: " + e.getMessage());
+            e.printStackTrace();
+            // Continue with project deletion even if application update fails
         }
         
-        return deleted;
+        // First remove from manager's list
+        boolean managerDeleted = manager.deleteProject(project);
+        System.out.println("DEBUG: Project removed from manager's list: " + managerDeleted);
+        
+        // Then remove from data manager and ensure it saves to file
+        boolean dataManagerDeleted = projectDataManager.removeProject(projectId);
+        System.out.println("DEBUG: Project removed from data manager: " + dataManagerDeleted);
+        
+        // Reload data after deletion to ensure memory is in sync with files
+        if (managerDeleted && dataManagerDeleted) {
+            System.out.println("DEBUG: Project successfully deleted. Reloading data...");
+            // If there's a way to reload application data, it should be called here
+        }
+        
+        return managerDeleted && dataManagerDeleted;
     }
-    
+
     @Override
     public boolean toggleProjectVisibility(String projectId, boolean visible, HDBManager manager) {
         // Validate input parameters

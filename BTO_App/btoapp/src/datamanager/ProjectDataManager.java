@@ -397,8 +397,19 @@ public class ProjectDataManager extends DataManager {
      */
     public boolean removeProject(String projectId) {
         if (projectId != null && projectMap.containsKey(projectId)) {
+            // Log what we're removing
+            System.out.println("DEBUG: Removing project from projectMap: " + projectId);
+            Project project = projectMap.get(projectId);
+            
+            // Remove project from the map
             projectMap.remove(projectId);
-            return saveProjects();
+            System.out.println("DEBUG: Project removed from memory. Map size is now: " + projectMap.size());
+            
+            // Save projects file
+            boolean saved = saveProjects();
+            System.out.println("DEBUG: ProjectList.txt saved result: " + saved);
+            
+            return saved;
         }
         return false;
     }
