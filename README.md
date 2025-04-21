@@ -1,4 +1,4 @@
-# BTO Management System
+# SC2002-Assignment: BTO Management System
 
 ## Project Overview
 
@@ -152,7 +152,6 @@ resources/                            # Resource files
     └── ProjectList.txt
 ```
 
-## Contributors
 ## Team Members
 
 - Chong Jia Cheng Aldric (U2421359L)
