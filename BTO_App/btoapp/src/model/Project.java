@@ -20,6 +20,13 @@ public class Project extends AProject {
     
     /**
      * Basic constructor for Project.
+     * 
+     * @param projectName             the name of the project
+     * @param neighborhood            the neighborhood where the project is located
+     * @param applicationOpeningDate  the date when applications open
+     * @param applicationClosingDate  the date when applications close
+     * @param managerInCharge         the HDB manager in charge of the project
+     * @param officerSlots            the number of officer slots for the project
      */
     public Project(String projectName, String neighborhood, Date applicationOpeningDate, 
                   Date applicationClosingDate, HDBManager managerInCharge, int officerSlots) {
@@ -30,7 +37,17 @@ public class Project extends AProject {
     }
     
     /**
-     * Full constructor for Project with flat type information.
+     * Full constructor for Project with each type information.
+     * 
+     * @param projectName             the name of the project
+     * @param neighborhood            the neighborhood where the project is located
+     * @param flatTypes               the list of flat types offered
+     * @param numberOfUnits           the list of units for each flat type
+     * @param sellingPrices           the list of selling prices for each flat type
+     * @param applicationOpeningDate  the date when applications open
+     * @param applicationClosingDate  the date when applications close
+     * @param managerInCharge         the HDB manager in charge of the project
+     * @param officerSlots            the number of officer slots for the project
      */
     public Project(String projectName, String neighborhood, List<FlatType> flatTypes, 
                   List<Integer> numberOfUnits, List<Double> sellingPrices,
@@ -61,6 +78,9 @@ public class Project extends AProject {
     
     /**
      * Adds an application to the project.
+     *
+     * @param application the application to add
+     * @return {@code true} if the application was added, {@code false} otherwise
      */
     public boolean addApplication(Application application) {
         if (application != null) {
@@ -68,16 +88,20 @@ public class Project extends AProject {
         }
         return false;
     }
-    
+
     /**
-     * Gets a list of all applications for the project.
+     * Returns a list of all applications for this project.
+     *
+     * @return list of applications
      */
     public List<Application> getApplications() {
         return new ArrayList<>(applications);
     }
-    
+
     /**
      * Adds an enquiry to the project.
+     *
+     * @param enquiry the enquiry to add
      */
     public void addEnquiry(Enquiry enquiry) {
         if (enquiry != null) {
@@ -92,6 +116,8 @@ public class Project extends AProject {
     
     /**
      * Removes an enquiry from the project.
+     *
+     * @param enquiry the enquiry to remove
      */
     public void removeEnquiry(Enquiry enquiry) {
         if (enquiry != null) {
@@ -100,7 +126,9 @@ public class Project extends AProject {
     }
     
     /**
-     * Gets a list of all enquiries for the project.
+     * Returns a list of all enquiries for this project.
+     *
+     * @return list of enquiries
      */
     public List<Enquiry> getEnquiries() {
         return new ArrayList<>(enquiries);
@@ -108,6 +136,8 @@ public class Project extends AProject {
     
     /**
      * Checks if the project is currently open for applications.
+     *
+     * @return {@code true} if applications are open, {@code false} otherwise
      */
     public boolean isOpenForApplications() {
         Date currentDate = new Date();

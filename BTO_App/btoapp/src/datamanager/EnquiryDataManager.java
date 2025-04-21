@@ -17,6 +17,21 @@ import model.Applicant;
 import model.Project;
 import utils.FilePathConfig;
 
+/**
+* Data manager for handling enquiry-related operations in the BTO Management System.
+* 
+* Manages the lifecycle of enquiries including:
+* - Loading enquiries from file
+* - Saving enquiries to file
+* - Adding, updating, and deleting enquiries
+* - Retrieving enquiries by various criteria
+* 
+* Integrates with applicant and project data managers to maintain 
+* relationships between enquiries, applicants, and projects.
+* 
+* @author Your Name
+* @version 1.0
+*/
 public class EnquiryDataManager extends DataManager {
     
     private static final String DELIMITER = "\t";
@@ -25,6 +40,19 @@ public class EnquiryDataManager extends DataManager {
     private List<Project> projectsList;
     private String filePath;
     
+    /**
+    * Constructor for EnquiryDataManager.
+    * 
+    * Initializes the data manager with:
+    * - A new HashMap to store enquiries
+    * - Lists of applicants and projects for flexible lookup
+    * - Configured file path for enquiry list storage
+    * 
+    * Converts input maps to lists for more flexible applicant and project reference.
+    * 
+    * @param applicantsMap Map of applicants with NRIC as key
+    * @param projectsMap Map of projects with project name as key
+    */
     public EnquiryDataManager(Map<String, Applicant> applicantsMap, Map<String, Project> projectsMap) {
         this.enquiryMap = new HashMap<>();
         this.applicantsList = new ArrayList<>();
@@ -52,7 +80,16 @@ public class EnquiryDataManager extends DataManager {
             System.out.println("DEBUG: Project: " + (proj.getProjectName() != null ? proj.getProjectName() : "null"));
         }
     }
-    
+
+    /**
+    * Loads enquiries from the configured file path.
+    * 
+    * Reads enquiry data from a tab-delimited file, parsing each line
+    * into an Enquiry object. Handles potential parsing errors 
+    * and associates enquiries with applicants and projects.
+    * 
+    * @return List of loaded Enquiry objects
+    */
     public List<Enquiry> loadEnquiries() {
         System.out.println("DEBUG: Loading enquiries from: " + filePath);
         enquiryMap.clear();
@@ -109,7 +146,16 @@ public class EnquiryDataManager extends DataManager {
             return new ArrayList<>();
         }
     }
-    
+
+    /**
+    * Parses a single line of enquiry data into an Enquiry object.
+    * 
+    * Extracts information such as enquiry ID, applicant, project, 
+    * text, timestamp, and status from a parsed line.
+    * 
+    * @param parts Array of string parts from a parsed line
+    * @return Parsed Enquiry object, or null if parsing fails
+    */
     private Enquiry parseEnquiryFromLine(String[] parts) {
         if (parts.length < 6) {
             System.out.println("DEBUG: Invalid enquiry data format (not enough fields): " + parts.length);
@@ -176,6 +222,17 @@ public class EnquiryDataManager extends DataManager {
         }
     }
     
+    /**
+    * Finds an Applicant by NRIC using list-based lookup.
+    * 
+    * Supports multiple matching strategies including:
+    * - Exact match
+    * - Trimmed match
+    * - Case-insensitive match
+    * 
+    * @param nric NRIC to search for
+    * @return Matching Applicant, or null if not found
+    */
     private Applicant findApplicantInList(String nric) {
         if (nric == null) return null;
         
@@ -210,7 +267,12 @@ public class EnquiryDataManager extends DataManager {
         System.out.println("DEBUG: Available NRICs: " + getAvailableNRICs());
         return null;
     }
-    
+
+    /**
+    * Generates a comma-separated string of available NRIC numbers.
+    * 
+    * @return A string containing all NRIC numbers enclosed in single quotes
+    */
     private String getAvailableNRICs() {
         StringBuilder sb = new StringBuilder();
         for (Applicant app : applicantsList) {
@@ -220,6 +282,17 @@ public class EnquiryDataManager extends DataManager {
         return sb.toString();
     }
     
+    /**
+    * Finds a Project by name using list-based lookup.
+    * 
+    * Supports multiple matching strategies including:
+    * - Exact match
+    * - Trimmed match
+    * - Case-insensitive match
+    * 
+    * @param name Project name to search for
+    * @return Matching Project, or null if not found
+    */
     private Project findProjectInList(String name) {
         if (name == null) return null;
         
@@ -236,6 +309,21 @@ public class EnquiryDataManager extends DataManager {
         return null;
     }
     
+    /**
+    * Saves a list of enquiries to the configured file path.
+    * 
+    * Writes enquiry data to a tab-delimited file, including:
+    * - Enquiry ID
+    * - Applicant NRIC
+    * - Project name
+    * - Enquiry text
+    * - Timestamp
+    * - Status
+    * - Responder and reply (if applicable)
+    * 
+    * @param enquiries List of Enquiry objects to save
+    * @return true if save is successful, false otherwise
+    */
     public boolean saveEnquiries(List<Enquiry> enquiries) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
             // Write header
@@ -282,6 +370,15 @@ public class EnquiryDataManager extends DataManager {
         }
     }
     
+    /**
+    * Adds a new enquiry to the data manager.
+    * 
+    * Associates the enquiry with its applicant and project (if applicable),
+    * adds it to the internal map, and saves to file.
+    * 
+    * @param enquiry Enquiry to add
+    * @return true if addition is successful, false otherwise
+    */
     public boolean addEnquiry(Enquiry enquiry) {
         if (enquiry == null || enquiry.getEnquiryId() == null) {
             System.out.println("DEBUG: Cannot add null enquiry or enquiry with null ID");
@@ -304,6 +401,14 @@ public class EnquiryDataManager extends DataManager {
         return saveEnquiries(getAllEnquiries());
     }
     
+    /**
+    * Updates an existing enquiry in the data manager.
+    * 
+    * Replaces the existing enquiry in the internal map and saves to file.
+    * 
+    * @param enquiry Enquiry to update
+    * @return true if update is successful, false otherwise
+    */
     public boolean updateEnquiry(Enquiry enquiry) {
         if (enquiry == null || enquiry.getEnquiryId() == null) {
             return false;
@@ -319,6 +424,17 @@ public class EnquiryDataManager extends DataManager {
         return saveEnquiries(getAllEnquiries());
     }
     
+    /**
+    * Deletes an enquiry from the data manager.
+    * 
+    * Removes the enquiry from:
+    * - Internal enquiry map
+    * - Applicant's enquiry list
+    * - Project's enquiry list (if applicable)
+    * 
+    * @param enquiryId ID of the enquiry to delete
+    * @return true if deletion is successful, false otherwise
+    */
     public boolean deleteEnquiry(String enquiryId) {
         if (enquiryId == null || !enquiryMap.containsKey(enquiryId)) {
             return false;
@@ -341,14 +457,31 @@ public class EnquiryDataManager extends DataManager {
         return saveEnquiries(getAllEnquiries());
     }
     
+    /**
+    * Retrieves an enquiry by its unique ID.
+    * 
+    * @param enquiryId ID of the enquiry to retrieve
+    * @return Enquiry object, or null if not found
+    */
     public Enquiry getEnquiryById(String enquiryId) {
         return enquiryMap.get(enquiryId);
     }
     
+    /**
+    * Retrieves all enquiries in the data manager.
+    * 
+    * @return List of all Enquiry objects
+    */
     public List<Enquiry> getAllEnquiries() {
         return new ArrayList<>(enquiryMap.values());
     }
     
+    /**
+    * Retrieves all enquiries for a specific applicant.
+    * 
+    * @param applicantNric NRIC of the applicant
+    * @return List of Enquiry objects for the specified applicant
+    */
     public List<Enquiry> getEnquiriesByApplicant(String applicantNric) {
         List<Enquiry> result = new ArrayList<>();
         

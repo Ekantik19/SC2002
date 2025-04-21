@@ -54,22 +54,47 @@ public class Report {
         
         // Getters
         
+         /**
+         * Returns the applicant's name.
+         *
+         * @return the applicant's name
+         */
         public String getApplicantName() {
             return applicantName;
         }
         
+        /**
+         * Returns the applicant's NRIC.
+         *
+         * @return the applicant's NRIC
+         */
         public String getApplicantNric() {
             return applicantNric;
         }
         
+        /**
+         * Returns the applicant's age.
+         *
+         * @return the applicant's age
+         */
         public int getApplicantAge() {
             return applicantAge;
         }
         
+        /**
+         * Returns the applicant's marital status.
+         *
+         * @return the applicant's marital status
+         */
         public String getMaritalStatus() {
             return maritalStatus;
         }
         
+        /**
+         * Returns the flat type booked by the applicant.
+         *
+         * @return the flat type
+         */
         public FlatType getFlatType() {
             return flatType;
         }
@@ -196,22 +221,47 @@ public class Report {
     
     // Getters
     
+   /**
+     * Returns the report ID.
+     * 
+     * @return the report ID
+     */
     public String getReportId() {
         return reportId;
     }
     
+    /**
+     * Returns the project associated with the report.
+     * 
+     * @return the project
+     */
     public Project getProject() {
         return project;
     }
     
+    /**
+     * Returns the report title.
+     * 
+     * @return the report title
+     */
     public String getReportTitle() {
         return reportTitle;
     }
     
+    /**
+     * Returns the generation date of the report.
+     * 
+     * @return the generation date
+     */
     public Date getGenerationDate() {
         return generationDate;
     }
     
+    /**
+     * Returns a copy of the list of report entries.
+     * 
+     * @return the list of report entries
+     */
     public List<ReportEntry> getEntries() {
         return new ArrayList<>(entries);
     }

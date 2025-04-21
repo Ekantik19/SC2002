@@ -5,8 +5,20 @@ import java.util.Map;
 
 /**
  * Menu builder for Applicant users.
+ * 
+ * This class implements the {@link MenuBuilder} interface to construct
+ * a menu specifically tailored for applicants.
+ * 
+ * @author name
  */
 public class ApplicantMenuBuilder implements MenuBuilder {
+
+     /**
+     * Builds and returns the menu options for applicant users.
+     *
+     * @return a {@link Map} containing the menu option number as key and
+     *         the corresponding description as value
+     */
     @Override
     public Map<Integer, String> buildMenu() {
         Map<Integer, String> menuOptions = new LinkedHashMap<>();

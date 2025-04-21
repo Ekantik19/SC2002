@@ -1,10 +1,8 @@
-// AAuthenticationController.java
 package controller.abstracts;
 
+import controller.interfaces.IAuthenticationController;
 import java.util.HashMap;
 import java.util.Map;
-
-import controller.interfaces.IAuthenticationController;
 import model.Applicant;
 import model.HDBManager;
 import model.HDBOfficer;
@@ -14,6 +12,15 @@ import model.enums.UserRole;
 /**
  * Abstract class for Authentication Controller in the BTO Management System.
  * Implements common authentication-related functionality.
+ * 
+ * Key Features:
+ * - User login and authentication
+ * - Password change mechanism
+ * - NRIC (National Registration Identity Card) validation
+ * - User role and type management
+ * 
+ * The class uses a Map to store and manage users, allowing quick lookup by NRIC.
+ * It supports different user types: Applicant, HDB Officer, and HDB Manager.
  * 
  * @author Your Name
  * @version 1.0

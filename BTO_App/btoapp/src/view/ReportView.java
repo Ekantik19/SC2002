@@ -32,6 +32,7 @@ public class ReportView extends ARenderView implements ViewInterface{
         this.scanner = new Scanner(System.in);
     }
  
+    /*displays interface for Report */
     public void display() {
         printHeader("REPORT GENERATION");
         
@@ -229,16 +230,25 @@ public class ReportView extends ARenderView implements ViewInterface{
         scanner.nextLine();
     }
     
+    /**
+     * Shows a message to the user.
+     *
+     * @param message The message to display
+     */
     @Override
     public void showMessage(String message) {
         System.out.println("\n>>> " + message);
     }
     
+    /**
+     * Shows an error message to the user.
+     *
+     * @param error The error message to display
+     */
     @Override
     public void showError(String error) {
         System.out.println("\n!!! ERROR: " + error);
     }
-    
     /**
      * Gets an integer input from the user.
      * 

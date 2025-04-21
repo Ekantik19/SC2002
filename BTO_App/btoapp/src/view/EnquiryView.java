@@ -512,16 +512,26 @@ public class EnquiryView extends ARenderView implements ViewInterface {
         }
     }
     
+    /**
+     * Shows a message to the user.
+     *
+     * @param message The message to display
+     */
     @Override
     public void showMessage(String message) {
         System.out.println("\n>>> " + message);
     }
     
+    /**
+     * Shows an error message to the user.
+     *
+     * @param error The error message to display
+     */
     @Override
     public void showError(String error) {
         System.out.println("\n!!! ERROR: " + error);
     }
-    
+
     /**
      * Gets an integer input from the user.
      * 

@@ -28,10 +28,12 @@ public class ApplicationView extends ARenderView implements ViewInterface {
     private BookingController bookingController;
     
     /**
-     * Constructor for ApplicationView.
-     * 
-     * @param currentUser The currently logged-in user
-     * @param applicationController Controller for application operations
+     * Constructs an ApplicationView with the specified controllers and current user.
+     *
+     * @param currentUser           the user currently logged in
+     * @param applicationController the controller responsible for application logic
+     * @param projectController     the controller responsible for project management
+     * @param bookingController     the controller responsible for booking management
      */
     public ApplicationView(User currentUser, ApplicationController applicationController, 
                       ProjectController projectController, BookingController bookingController) {
@@ -239,24 +241,23 @@ public class ApplicationView extends ARenderView implements ViewInterface {
         Project project = officer.getAssignedProject();
         printHeader("PROCESS FLAT BOOKING: " + project.getProjectName());
 
-        System.out.println("DEBUG: Processing flat booking for project: " + project.getProjectName());
+        System.out.println("Processing flat booking for project: " + project.getProjectName());
 
         // Get all applications for the project
         List<Application> allApplications = applicationController.getApplicationsByProject(project);
-        System.out.println("DEBUG: Total applications in project: " + allApplications.size());
+        System.out.println("Total applications in project: " + allApplications.size());
         
         // Log all application details
         for (Application app : allApplications) {
-            System.out.println("DEBUG: Application - ID: " + app.getApplicationId() + 
+            System.out.println("Application - ID: " + app.getApplicationId() + 
                             ", Applicant: " + app.getApplicant().getName() + 
                             ", Status: " + app.getStatus());
         }
-        
-        // First, show all SUCCESSFUL applications for the project
+
         List<Application> successfulApplications = applicationController.getApplicationsByStatus(
             project, ApplicationStatus.SUCCESSFUL);
 
-        System.out.println("DEBUG: Successful applications: " + successfulApplications.size());
+        System.out.println("Successful applications: " + successfulApplications.size());
         
         if (successfulApplications.isEmpty()) {
             showMessage("No successful applications found that are eligible for booking.");
@@ -314,7 +315,9 @@ public class ApplicationView extends ARenderView implements ViewInterface {
     }
     
     /**
-     * Displays the interface for generating booking receipts.
+     * Displays and manages withdrawal requests for projects managed by the current HDB Manager.
+     * Only accessible to users with HDBManager role.
+     * Prompts the manager to select a project, lists withdrawal requests, and allows management of a selected request.
      */
     public void displayGenerateReceipt() {
         if (!(currentUser instanceof HDBOfficer)) {
@@ -617,11 +620,21 @@ public class ApplicationView extends ARenderView implements ViewInterface {
         scanner.nextLine();
     }
     
+    /**
+     * Shows a message to the user.
+     *
+     * @param message The message to display
+     */
     @Override
     public void showMessage(String message) {
         System.out.println("\n>>> " + message);
     }
     
+    /**
+     * Shows an error message to the user.
+     *
+     * @param error The error message to display
+     */
     @Override
     public void showError(String error) {
         System.out.println("\n!!! ERROR: " + error);

@@ -34,7 +34,6 @@ public class App {
      */
     public App() {
         try {
-            // Initialize scanner
             scanner = new Scanner(System.in);
 
             // Initialize data managers
@@ -56,8 +55,6 @@ public class App {
             boolean managersLoaded = managerDataManager.loadManagerData();
             System.out.println("Managers loaded: " + managersLoaded);
 
-            // Step 1: Create maps of managers and officers for ProjectDataManager
-            System.out.println("DEBUG: Creating manager and officer maps...");
             Map<String, model.HDBManager> managerMap = managerDataManager.getAllManagers().stream()
                 .collect(java.util.stream.Collectors.toMap(
                     m -> m.getNric().trim(), 
@@ -70,86 +67,55 @@ public class App {
                     o -> o
                 ));
 
-            System.out.println("DEBUG: Created manager map with " + managerMap.size() + " entries");
-            System.out.println("DEBUG: Created officer map with " + officerMap.size() + " entries");
-
-            // Step 2: Initialize ProjectDataManager and load projects
-            System.out.println("DEBUG: Initializing ProjectDataManager...");
             ProjectDataManager projectDataManager = new ProjectDataManager(managerMap, officerMap);
 
-            // Step 3: Initialize ProjectController
-            System.out.println("DEBUG: Initializing ProjectController...");
             projectController = new ProjectController(projectDataManager);
 
-            // Step 4: Get projects and create a clean map
             List<Project> projects = projectController.getAllProjects();
-            System.out.println("DEBUG: ProjectController returned " + projects.size() + " projects");
 
             Map<String, Project> projectMap = new HashMap<>();
             for (Project project : projects) {
                 if (project != null && project.getProjectName() != null) {
                     projectMap.put(project.getProjectName().trim(), project);
-                    System.out.println("DEBUG: Added project to map: " + project.getProjectName());
                 }
             }
-            System.out.println("DEBUG: Created project map with " + projectMap.size() + " entries");
 
-            // Step 5: Initialize ApplicationDataManager - MOVED BEFORE AuthController
-            System.out.println("DEBUG: Initializing ApplicationDataManager...");
             ApplicationDataManager applicationDataManager = new ApplicationDataManager(
                 applicantDataManager, projectDataManager, officerDataManager);
 
-            System.out.println("DEBUG: Loading application data...");
             boolean applicationsLoaded = applicationDataManager.loadApplicationData();
-            System.out.println("DEBUG: Applications loaded: " + applicationsLoaded);
 
-            // Initialize authentication controller WITH ApplicationDataManager
-            System.out.println("DEBUG: Initializing AuthenticationController...");
             authController = new AuthenticationController(
                 applicantDataManager, 
                 officerDataManager, 
                 managerDataManager,
-                applicationDataManager  // Add this parameter
+                applicationDataManager  
             );
 
             // Create EligibilityCheckerService
             EligibilityCheckerService eligibilityService = new EligibilityCheckerService();
 
-            System.out.println("DEBUG: Initializing ApplicationController...");
             applicationController = new ApplicationController(
                 applicationDataManager, applicantDataManager, eligibilityService);
 
-            System.out.println("DEBUG: Initializing BookingController...");
             bookingController = new BookingController(applicationDataManager, projectDataManager);
 
-            // Step 6: Create applicant map for EnquiryDataManager
-            System.out.println("DEBUG: Creating applicant map for EnquiryDataManager...");
             Map<String, Applicant> applicantMap = new HashMap<>();
             for (Applicant applicant : applicants) {
                 if (applicant != null && applicant.getNric() != null) {
                     applicantMap.put(applicant.getNric().trim(), applicant);
-                    System.out.println("DEBUG: Added applicant to map: " + applicant.getName() + 
-                                    ", NRIC: " + applicant.getNric());
                 }
             }
-            System.out.println("DEBUG: Created applicant map with " + applicantMap.size() + " entries");
 
-            // Step 7: Initialize EnquiryDataManager
-            System.out.println("DEBUG: Initializing EnquiryDataManager...");
             EnquiryDataManager enquiryDataManager = new EnquiryDataManager(applicantMap, projectMap);
 
-            // Step 8: Initialize EnquiryController
-            System.out.println("DEBUG: Initializing EnquiryController...");
             enquiryController = new EnquiryController(projectController, enquiryDataManager);
 
-            System.out.println("DEBUG: Initializing ManagerController...");
             managerController = new ManagerController(
                 managerDataManager, 
                 projectDataManager,
                 officerDataManager
             );
-
-            System.out.println("DEBUG: Initialization complete");
            
         } catch (Exception e) {
             System.out.println("ERROR during initialization: " + e.getMessage());

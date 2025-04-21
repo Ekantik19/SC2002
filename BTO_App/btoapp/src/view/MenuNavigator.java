@@ -27,11 +27,14 @@ public class MenuNavigator {
     
     /**
      * Constructor for MenuNavigator.
-     * 
+     *
      * @param currentUser The currently logged-in user
      * @param projectController Controller for project operations
      * @param applicationController Controller for application operations
      * @param enquiryController Controller for enquiry operations
+     * @param managerController Controller for manager operations
+     * @param authController Controller for authentication operations
+     * @param bookingController Controller for booking operations
      */
     public MenuNavigator(User currentUser, 
                          ProjectController projectController,
@@ -50,7 +53,6 @@ public class MenuNavigator {
         
         // Initialize view instances
         ProjectView projectView = new ProjectView(currentUser, projectController, applicationController,managerController);
-        //ApplicationView applicationView = new ApplicationView(currentUser, applicationController);
         ApplicationView applicationView = new ApplicationView(currentUser, applicationController, projectController, bookingController);
         EnquiryView enquiryView = new EnquiryView(currentUser, enquiryController, projectController);
         PasswordChangeView passwordView = new PasswordChangeView(currentUser,authController);
@@ -75,6 +77,11 @@ public class MenuNavigator {
     
     /**
      * Initializes actions for Applicant users.
+     *
+     * @param projectView The project view
+     * @param applicationView The application view
+     * @param enquiryView The enquiry view
+     * @param passwordView The password change view
      */
     private void initializeApplicantActions(ProjectView projectView, 
                                           ApplicationView applicationView,
@@ -112,9 +119,14 @@ public class MenuNavigator {
             return true;
         });
     }
-    
+
     /**
      * Initializes actions for HDB Officer users.
+     *
+     * @param projectView The project view
+     * @param applicationView The application view
+     * @param enquiryView The enquiry view
+     * @param passwordView The password change view
      */
     private void initializeOfficerActions(ProjectView projectView, 
                                 ApplicationView applicationView,
@@ -158,14 +170,12 @@ public class MenuNavigator {
             return true;
         });
 
-        // Change password option is now consistently at option 8
         officerActions.put(8, () -> {
             passwordView.display();
             return true;
         });
 
         // Add application-specific options if the officer has any application
-        // NOTE: Changed from hasActiveApplication() to check for any application
         if (officer.getCurrentApplication() != null) {
             officerActions.put(9, () -> {
             applicationView.displayMyApplication();
@@ -178,9 +188,13 @@ public class MenuNavigator {
         });
     }
 }
-    
     /**
      * Initializes actions for HDB Manager users.
+     *
+     * @param projectView The project view
+     * @param applicationView The application view
+     * @param enquiryView The enquiry view
+     * @param passwordView The password change view
      */
     private void initializeManagerActions(ProjectView projectView, 
                                         ApplicationView applicationView,
@@ -253,8 +267,8 @@ public class MenuNavigator {
      * @return true to continue execution, false to exit
      */
     public boolean navigate(int option) {
-        System.out.println("DEBUG: User role: " + currentUser.getRole());
-        System.out.println("DEBUG: User class: " + currentUser.getClass().getSimpleName());
+        System.out.println("User role: " + currentUser.getRole());
+        System.out.println("User class: " + currentUser.getClass().getSimpleName());
         
         MenuAction action = null;
         

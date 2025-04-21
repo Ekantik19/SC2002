@@ -129,14 +129,29 @@ public abstract class AApplication {
     
     // Getters and Setters
     
+    /**
+     * Returns the unique identifier for the application.
+     * 
+     * @return the applicationId
+     */
     public String getApplicationId() {
         return applicationId;
     }
-    
+
+    /**
+     * Returns the applicant who submitted the application.
+     * 
+     * @return the applicant
+     */
     public Applicant getApplicant() {
         return applicant;
     }
     
+    /**
+     * Returns the project being applied for.
+     * 
+     * @return the project
+     */
     public Project getProject() {
         return project;
     }
@@ -149,27 +164,57 @@ public abstract class AApplication {
     public void setApplicationDate(Date applicationDate) {
         this.applicationDate = applicationDate;
     }
-    
+
+     /**
+     * Returns the date when the application was submitted.
+     * 
+     * @return the applicationDate
+     */
     public Date getApplicationDate() {
         return applicationDate;
     }
-    
+
+    /**
+     * Returns the current status of the application.
+     * 
+     * @return the status
+     */
     public ApplicationStatus getStatus() {
         return status;
     }
-    
+
+    /**
+     * Sets the application status.
+     * 
+     * @param status The new status for the application
+     */
     public void setStatus(ApplicationStatus status) {
         this.status = status;
     }
     
+    /**
+     * Returns the type of flat selected by the applicant.
+     * 
+     * @return the selectedFlatType
+     */
     public FlatType getSelectedFlatType() {
         return selectedFlatType;
     }
-    
+
+    /**
+     * Sets the selected flat type for the application.
+     * 
+     * @param selectedFlatType The flat type selected by the applicant
+     */
     public void setSelectedFlatType(FlatType selectedFlatType) {
         this.selectedFlatType = selectedFlatType;
     }
     
+    /**
+     * Checks if a withdrawal has been requested for this application.
+     * 
+     * @return true if a withdrawal has been requested, false otherwise
+     */
     public boolean isWithdrawalRequested() {
         return withdrawalRequested;
     }

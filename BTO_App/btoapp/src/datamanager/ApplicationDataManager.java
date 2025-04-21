@@ -40,11 +40,17 @@ public class ApplicationDataManager {
     private String filePath;
     
     /**
-     * Constructor for ApplicationDataManager.
-     * 
-     * @param applicantDataManager The ApplicantDataManager to use for resolving applicant references
-     * @param projectDataManager The ProjectDataManager to use for resolving project references
-     */
+    * Constructor for ApplicationDataManager.
+    * 
+    * Initializes the data manager with:
+    * - A new HashMap to store applications
+    * - References to related data managers
+    * - Configured file path for application list storage
+    * 
+    * @param applicantDataManager Manager for handling applicant-related data
+    * @param projectDataManager Manager for handling project-related data
+    * @param officerDataManager Manager for handling officer-related data
+    */
     public ApplicationDataManager(ApplicantDataManager applicantDataManager, ProjectDataManager projectDataManager, OfficerDataManager officerDataManager) {
         this.applicationMap = new HashMap<>();
         this.applicantDataManager = applicantDataManager;

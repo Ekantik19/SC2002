@@ -35,34 +35,38 @@ public class LoginView extends ARenderView implements ViewInterface{
         // Get NRIC
         System.out.print("Enter NRIC: ");
         String nric = scanner.nextLine();
-        System.out.println("DEBUG: User entered NRIC: '" + nric + "'");
         
         // Get password
         System.out.print("Enter Password: ");
         String password = scanner.nextLine();
-        System.out.println("DEBUG: User entered password: '" + password + "'");
         
-        System.out.println("DEBUG: Attempting login with authController...");
-        
-        // Use the new method instead of the original authenticate method
         User user = authController.authenticateAndLinkApplications(nric, password);
         
         if (user != null) {
-            System.out.println("DEBUG: Login successful! User: " + user.getName());
             System.out.println(">>> Login successful! Welcome, " + user.getName());
             return user;
         } else {
-            System.out.println("DEBUG: Login failed!");
+            System.out.println("Login failed!");
             showError("Invalid credentials. Please try again.");
             return null;
         }
     }
     
+    /**
+     * Shows a message to the user.
+     *
+     * @param message The message to display
+     */
     @Override
     public void showMessage(String message) {
         System.out.println("\n>>> " + message);
     }
     
+    /**
+     * Shows an error message to the user.
+     *
+     * @param error The error message to display
+     */
     @Override
     public void showError(String error) {
         System.out.println("\n!!! ERROR: " + error);

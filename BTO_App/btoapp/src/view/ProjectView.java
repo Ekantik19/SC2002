@@ -36,6 +36,7 @@ public class ProjectView extends ARenderView implements ViewInterface{
      * @param currentUser The currently logged-in user
      * @param projectController Controller for project operations
      * @param applicationController Controller for application operations
+     * @param managerController Controller for manager operations
      */
     public ProjectView(User currentUser, ProjectController projectController, 
         ApplicationController applicationController,
@@ -910,10 +911,10 @@ public class ProjectView extends ARenderView implements ViewInterface{
         // Add explicit check for HDB Officers
         if (currentUser instanceof HDBOfficer) {
             HDBOfficer officer = (HDBOfficer) currentUser;
-            System.out.println("DEBUG: Checking if officer is assigned to project: " + project.getProjectName());
-            System.out.println("DEBUG: Officer assigned project: " + 
+            System.out.println("Checking if officer is assigned to project: " + project.getProjectName());
+            System.out.println("Officer assigned project: " + 
                             (officer.getAssignedProject() != null ? officer.getAssignedProject().getProjectName() : "none"));
-            System.out.println("DEBUG: Registration approved: " + officer.isRegistrationApproved());
+            System.out.println("Registration approved: " + officer.isRegistrationApproved());
             
             // Direct check for assigned officers
             List<HDBOfficer> assignedOfficers = project.getAssignedOfficers();
@@ -985,11 +986,21 @@ public class ProjectView extends ARenderView implements ViewInterface{
         }
     }
     
+    /**
+     * Shows a message to the user.
+     *
+     * @param message The message to display
+     */
     @Override
     public void showMessage(String message) {
         System.out.println("\n>>> " + message);
     }
     
+    /**
+     * Shows an error message to the user.
+     *
+     * @param error The error message to display
+     */
     @Override
     public void showError(String error) {
         System.out.println("\n!!! ERROR: " + error);

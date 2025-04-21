@@ -15,6 +15,32 @@ import model.enums.FlatType;
 /**
  * Controller for managing flat bookings in the BTO system.
  * Implements IBookingController and extends ABaseController.
+ * 
+ * 
+package controller;
+
+import controller.abstracts.ABaseController;
+import controller.interfaces.IBookingController;
+import datamanager.ApplicationDataManager;
+import datamanager.ProjectDataManager;
+import java.util.Date;
+import model.Applicant;
+import model.Application;
+import model.HDBOfficer;
+import model.Project;
+import model.enums.ApplicationStatus;
+import model.enums.FlatType;
+
+/**
+ * Controller for managing flat bookings in the BTO (Build-To-Order) system.
+ * 
+ * Responsible for:
+ * - Booking flats for successful applicants
+ * - Updating flat availability
+ * - Managing the booking process for HDB Officers
+ * 
+ * @author Your Name
+ * @version 1.0
  */
 public class BookingController extends ABaseController implements IBookingController {
     
@@ -32,6 +58,19 @@ public class BookingController extends ABaseController implements IBookingContro
         this.projectDataManager = projectDataManager;
     }
 
+    /**
+     * Books a flat for an applicant through an HDB Officer.
+     * 
+     * Validates booking conditions such as:
+     * - Applicant has not already booked a flat
+     * - Officer is assigned to the project
+     * - Application is in SUCCESSFUL status
+     * - Flat type is still available
+     * 
+     * @param applicationId Unique identifier of the application
+     * @param officer HDB Officer processing the booking
+     * @return true if the flat is successfully booked, false otherwise
+     */
     @Override
     public boolean bookFlat(String applicationId, HDBOfficer officer) {
         // Validate input parameters
@@ -99,6 +138,16 @@ public class BookingController extends ABaseController implements IBookingContro
         return booked;
     }
     
+    /**
+     * Updates the availability of flats for a specific project and flat type.
+     * 
+     * Decrements the number of available units for the specified flat type
+     * and updates the project's flat type information.
+     * 
+     * @param projectId Unique identifier of the project
+     * @param flatType Type of flat being booked
+     * @return true if flat availability is successfully updated, false otherwise
+     */
     @Override
     public boolean updateFlatAvailability(String projectId, FlatType flatType) {
         // Validate input parameters

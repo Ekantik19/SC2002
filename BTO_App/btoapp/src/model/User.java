@@ -23,6 +23,7 @@ public class User extends AUser implements IUserManagement {
      * @param age The age of the user
      * @param maritalStatus The marital status of the user (Single/Married)
      * @param password The user's password
+     * @throws IllegalArgumentException if the NRIC format is invalid
      */
     public User(String name, String nric, int age, String maritalStatus, String password) {
         super(name, nric, age, maritalStatus, password, UserRole.APPLICANT);
@@ -49,6 +50,12 @@ public class User extends AUser implements IUserManagement {
         return getNric().equals(nric) && validatePassword(password);
     }
 
+    /**
+     * Validates the user's password.
+     *
+     * @param password the password to validate
+     * @return {@code true} if the password matches, {@code false} otherwise
+     */
     private boolean validatePassword(String password) {
         System.out.println("DEBUG: User.validatePassword - comparing '" + password + "' with '" + getPassword() + "'");
         boolean result = getPassword().equals(password);

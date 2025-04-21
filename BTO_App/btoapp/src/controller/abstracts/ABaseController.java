@@ -4,13 +4,21 @@ package controller.abstracts;
  * Abstract base class for controllers in the BTO Management System.
  * Provides common functionality such as error handling and result reporting.
  * 
+ * Key Features:
+ * - Enumerated result types for precise operation status reporting
+ * - Static inner class for encapsulating operation results
+ * - Utility methods for creating different types of operation results
+ * - Common validation methods for input parameters
+ * 
  * @author Your Name
  * @version 1.0
  */
 public abstract class ABaseController {
     
     /**
-     * Enum for operation result types.
+     * Enumeration of possible operation result types.
+     * Provides a standardized set of outcomes for various operations
+     * across different controllers in the system.
      */
     protected enum ResultType {
         SUCCESS,

@@ -31,10 +31,13 @@ public class MainMenuView extends ARenderView implements ViewInterface{
     /**
      * Constructor for MainMenuView.
      * 
-     * @param currentUser The currently logged-in user
-     * @param projectController Controller for project operations
-     * @param applicationController Controller for application operations
-     * @param enquiryController Controller for enquiry operations
+     * @param currentUser The currently logged-in user.
+     * @param projectController Controller for project operations.
+     * @param applicationController Controller for application operations.
+     * @param enquiryController Controller for enquiry operations.
+     * @param managerController Controller for manager operations.
+     * @param authController Controller for authentication operations.
+     * @param bookingController Controller for booking operations.
      */
     public MainMenuView(User currentUser, 
                        ProjectController projectController,
@@ -66,6 +69,9 @@ public class MainMenuView extends ARenderView implements ViewInterface{
         this.menuActions = new HashMap<>();
     }
 
+    /**
+     * Displays the main menu and handles user navigation.
+     */
     public void display() {
         boolean exit = false;
         
@@ -103,11 +109,21 @@ public class MainMenuView extends ARenderView implements ViewInterface{
         }
     }
     
+    /**
+     * Shows a message to the user.
+     *
+     * @param message The message to display
+     */
     @Override
     public void showMessage(String message) {
         System.out.println("\n>>> " + message);
     }
     
+    /**
+     * Shows an error message to the user.
+     *
+     * @param error The error message to display
+     */
     @Override
     public void showError(String error) {
         System.out.println("\n!!! ERROR: " + error);

@@ -20,8 +20,18 @@ import model.enums.FlatType;
 import utils.FilePathConfig;
 
 /**
- * Data manager for Project entities in the BTO Management System.
- */
+* Data manager for Project entities in the BTO Management System.
+* 
+* Responsible for:
+* - Loading projects from file
+* - Saving projects to file
+* - Managing project data in memory
+* - Parsing and creating Project objects
+* - Maintaining relationships with managers and officers
+* 
+* @author Your Name
+* @version 1.0
+*/
 public class ProjectDataManager extends DataManager {
     
     private Map<String, Project> projectMap;
@@ -31,8 +41,18 @@ public class ProjectDataManager extends DataManager {
     private static final String DELIMITER = "\t";
     
     /**
-     * Constructor for ProjectDataManager.
-     */
+    * Constructor for ProjectDataManager.
+    * 
+    * Initializes the data manager with:
+    * - A new HashMap to store projects
+    * - References to manager and officer maps
+    * - Configured file path for project list storage
+    * 
+    * Loads projects upon initialization and logs debug information.
+    * 
+    * @param managerMap Map of HDB Managers with NRIC as key
+    * @param officerMap Map of HDB Officers with NRIC as key
+    */
     public ProjectDataManager(Map<String, HDBManager> managerMap, Map<String, HDBOfficer> officerMap) {
         this.projectMap = new HashMap<>();
         this.managerMap = managerMap;
@@ -54,8 +74,14 @@ public class ProjectDataManager extends DataManager {
     }
         
     /**
-     * Loads projects from file.
-     */
+    * Loads projects from the configured file path.
+    * 
+    * Reads project data from a tab-delimited file, parsing each line
+    * into a Project object. Handles potential parsing errors and 
+    * associates projects with managers and officers.
+    * 
+    * @return List of loaded Project objects
+    */
     public List<Project> loadProjects() {
         System.out.println("DEBUG: Loading projects from: " + filePath);
         File file = new File(filePath);
@@ -125,10 +151,19 @@ public class ProjectDataManager extends DataManager {
             return new ArrayList<>();
         }
     }
-    
+
     /**
-     * Parses a Project from a line of text.
-     */
+    * Parses a single line of project data into a Project object.
+    * 
+    * Extracts information such as:
+    * - Project name and neighborhood
+    * - Flat types and their details
+    * - Application dates
+    * - Manager and officer information
+    * 
+    * @param line A tab-delimited line of project data
+    * @return Parsed Project object, or null if parsing fails
+    */
     private Project parseProjectFromLine(String line) {
         try {
             String[] parts = line.split(DELIMITER);
@@ -248,8 +283,13 @@ public class ProjectDataManager extends DataManager {
     }
     
     /**
-     * Finds an officer by name.
-     */
+    * Finds an HDB Officer by their name.
+    * 
+    * Performs a case-insensitive search in the officer map.
+    * 
+    * @param name Name of the officer to find
+    * @return Matching HDBOfficer, or null if not found
+    */
     private HDBOfficer findOfficerByName(String name) {
         if (officerMap == null) return null;
         
@@ -263,16 +303,21 @@ public class ProjectDataManager extends DataManager {
     }
     
     /**
-     * Gets all projects.
-     */
+    * Retrieves all projects in the data manager.
+    * 
+    * @return List of all Project objects
+    */
     public List<Project> getAllProjects() {
         System.out.println("DEBUG: getAllProjects returning " + projectMap.size() + " projects");
         return new ArrayList<>(projectMap.values());
     }
-    
+
     /**
-     * Gets a project by name.
-     */
+    * Retrieves a project by its name.
+    * 
+    * @param projectName Name of the project to retrieve
+    * @return Project object, or null if not found
+    */
     public Project getProjectByName(String projectName) {
         if (projectName == null) {
             return null;
@@ -289,8 +334,13 @@ public class ProjectDataManager extends DataManager {
     }
     
     /**
-     * Adds a project to the data manager.
-     */
+    * Adds a new project to the data manager.
+    * 
+    * Stores the project in the internal map and saves to file.
+    * 
+    * @param project Project to add
+    * @return true if addition is successful, false otherwise
+    */
     public boolean addProject(Project project) {
         if (project != null && project.getProjectName() != null) {
             projectMap.put(project.getProjectName(), project);
@@ -301,10 +351,14 @@ public class ProjectDataManager extends DataManager {
         }
         return false;
     }
-    
     /**
-     * Updates a project in the data manager.
-     */
+    * Updates an existing project in the data manager.
+    * 
+    * Replaces the existing project in the internal map and saves to file.
+    * 
+    * @param project Project to update
+    * @return true if update is successful, false otherwise
+    */
     public boolean updateProject(Project project) {
         if (project != null && project.getProjectName() != null) {
             projectMap.put(project.getProjectName(), project);
@@ -314,8 +368,16 @@ public class ProjectDataManager extends DataManager {
     }
 
     /**
-     * Saves all projects to the project data file.
-     */
+    * Saves all projects to the configured file path.
+    * 
+    * Writes project data to a tab-delimited file, including:
+    * - Project details
+    * - Flat type information
+    * - Application dates
+    * - Manager and officer information
+    * 
+    * @return true if save is successful, false otherwise
+    */
     private boolean saveProjects() {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
             // Write header
@@ -393,8 +455,13 @@ public class ProjectDataManager extends DataManager {
     }
     
     /**
-     * Removes a project from the data manager.
-     */
+    * Removes a project from the data manager.
+    * 
+    * Deletes the project from the internal map and updates the file.
+    * 
+    * @param projectId Name of the project to remove
+    * @return true if removal is successful, false otherwise
+    */
     public boolean removeProject(String projectId) {
         if (projectId != null && projectMap.containsKey(projectId)) {
             // Log what we're removing

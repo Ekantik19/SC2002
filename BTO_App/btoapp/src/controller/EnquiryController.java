@@ -15,6 +15,18 @@ import model.Project;
 
 /**
  * Controller for managing enquiries in the BTO Management System.
+ * 
+ * Responsible for handling all enquiry-related operations including:
+ * - Creating new enquiries
+ * - Updating existing enquiries
+ * - Deleting enquiries
+ * - Responding to enquiries
+ * - Retrieving enquiries by various criteria
+ * 
+ * Integrates with data managers to persist and retrieve enquiry information.
+ * 
+ * @author Your Name
+ * @version 1.0
  */
 public class EnquiryController extends ABaseController implements IEnquiryController {
     
@@ -23,6 +35,10 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
     
     /**
      * Constructor for EnquiryController.
+     * Loads existing enquiries upon initialisation
+     * 
+     * @param projectController Controller for managing project-related operations
+     * @param enquiryDataManager Manager for handling enquiry data operations
      */
     public EnquiryController(ProjectController projectController, EnquiryDataManager enquiryDataManager) {
         this.projectController = projectController;
@@ -42,7 +58,18 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         List<Enquiry> enquiries = enquiryDataManager.loadEnquiries();
         System.out.println("DEBUG: Controller loaded " + enquiries.size() + " enquiries");
     }
-    
+
+    /**
+     * Creates a new enquiry for an applicant.
+     * 
+     * Validates input, generates a unique enquiry ID, and associates 
+     * the enquiry with the applicant and optionally a project.
+     * 
+     * @param applicant The applicant creating the enquiry
+     * @param projectName Optional project name related to the enquiry
+     * @param enquiryText The text content of the enquiry
+     * @return The created Enquiry object, or null if creation fails
+     */
     @Override
     public Enquiry createEnquiry(Applicant applicant, String projectName, String enquiryText) {
         // Validate input
@@ -100,6 +127,16 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         }
     }
     
+    /**
+     * Updates an existing enquiry's text.
+     * 
+     * Allows an applicant to modify their own enquiry.
+     * 
+     * @param enquiryId Unique identifier of the enquiry
+     * @param newEnquiryText Updated text for the enquiry
+     * @param applicant The applicant modifying the enquiry
+     * @return true if the update is successful, false otherwise
+     */
     @Override
     public boolean updateEnquiry(String enquiryId, String newEnquiryText, Applicant applicant) {
         // Find the enquiry
@@ -129,7 +166,16 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         
         return updated;
     }
-    
+
+    /**
+     * Deletes an existing enquiry.
+     * 
+     * Allows an applicant to delete their own enquiry.
+     * 
+     * @param enquiryId Unique identifier of the enquiry
+     * @param applicant The applicant deleting the enquiry
+     * @return true if the deletion is successful, false otherwise
+     */
     @Override
     public boolean deleteEnquiry(String enquiryId, Applicant applicant) {
         // Find the enquiry
@@ -165,6 +211,16 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         return deleted;
     }
     
+    /**
+     * Adds a reply to an enquiry by an HDB Officer.
+     * 
+     * Allows an officer to respond to an existing enquiry.
+     * 
+     * @param enquiryId Unique identifier of the enquiry
+     * @param replyText The response text
+     * @param officer The HDB Officer responding
+     * @return true if the reply is successfully added, false otherwise
+     */
     @Override
     public boolean replyToEnquiryAsOfficer(String enquiryId, String replyText, HDBOfficer officer) {
         // Find the enquiry
@@ -189,6 +245,16 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         return updated;
     }
     
+    /**
+     * Adds a reply to an enquiry by an HDB Manager.
+     * 
+     * Allows a manager to respond to an existing enquiry.
+     * 
+     * @param enquiryId Unique identifier of the enquiry
+     * @param replyText The response text
+     * @param manager The HDB Manager responding
+     * @return true if the reply is successfully added, false otherwise
+     */
     @Override
     public boolean replyToEnquiryAsManager(String enquiryId, String replyText, HDBManager manager) {
         // Find the enquiry
@@ -212,7 +278,13 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         
         return updated;
     }
-    
+
+    /**
+     * Retrieves all enquiries created by a specific applicant.
+     * 
+     * @param applicant The applicant whose enquiries are to be retrieved
+     * @return A list of enquiries created by the applicant
+     */
     @Override
     public List<Enquiry> getEnquiriesByApplicant(Applicant applicant) {
         if (applicant == null) {
@@ -251,7 +323,14 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         }
         return false;
     }
-    
+
+    /**
+     * Retrieves enquiries for a specific project assigned to an HDB Officer.
+     * 
+     * @param projectId Unique identifier of the project
+     * @param officer The HDB Officer assigned to the project
+     * @return A list of enquiries for the specified project
+     */
     @Override
     public List<Enquiry> getEnquiriesForOfficer(String projectId, HDBOfficer officer) {
         if (projectId == null || officer == null) {
@@ -277,6 +356,12 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         return enquiries;
     }
     
+    /**
+     * Retrieves all enquiries for projects managed by an HDB Manager.
+     * 
+     * @param manager The HDB Manager
+     * @return A list of all enquiries across the manager's projects
+     */
     @Override
     public List<Enquiry> getAllEnquiriesForManager(HDBManager manager) {
         if (manager == null) {
@@ -300,6 +385,12 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         return allEnquiries;
     }
     
+    /**
+     * Retrieves all enquiries for a specific project.
+     * 
+     * @param projectId Unique identifier of the project
+     * @return A list of enquiries for the specified project
+     */
     @Override
     public List<Enquiry> getEnquiriesByProject(String projectId) {
         if (projectId == null) {
@@ -318,7 +409,13 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         
         return enquiries;
     }
-    
+
+    /**
+     * Retrieves all answered enquiries for a specific project.
+     * 
+     * @param projectId Unique identifier of the project
+     * @return A list of answered enquiries
+     */
     @Override
     public List<Enquiry> getAnsweredEnquiries(String projectId) {
         List<Enquiry> allEnquiries = getEnquiriesByProject(projectId);
@@ -335,6 +432,12 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         return answeredEnquiries;
     }
     
+    /**
+     * Retrieves all unanswered enquiries for a specific project.
+     * 
+     * @param projectId Unique identifier of the project
+     * @return A list of unanswered enquiries
+     */
     @Override
     public List<Enquiry> getUnansweredEnquiries(String projectId) {
         List<Enquiry> allEnquiries = getEnquiriesByProject(projectId);

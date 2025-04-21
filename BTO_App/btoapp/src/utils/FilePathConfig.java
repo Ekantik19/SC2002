@@ -24,7 +24,11 @@ public class FilePathConfig {
     // Enquiry-related file paths
     public static final String ENQUIRY_LIST_PATH = BASE_PATH + "EnquiryList.txt";
 
-    // Private constructor to prevent instantiation
+    /**
+     * Private constructor to prevent instantiation.
+     *
+     * @throws AssertionError always thrown to prevent instantiation
+     */
     private FilePathConfig() {
         throw new AssertionError("Cannot be instantiated");
     }

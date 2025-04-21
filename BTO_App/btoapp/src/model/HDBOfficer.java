@@ -138,10 +138,20 @@ public class HDBOfficer extends Applicant {
     
     // Getters
     
+    /**
+     * Gets the project assigned to this officer.
+     * 
+     * @return The assigned project, or null if not assigned.
+     */
     public Project getAssignedProject() {
         return assignedProject;
     }
-    
+
+     /**
+     * Checks if the officer's registration has been approved.
+     * 
+     * @return true if registration is approved, false otherwise.
+     */
     public boolean isRegistrationApproved() {
         return registrationApproved;
     }

@@ -16,6 +16,17 @@ import model.enums.FlatType;
 /**
  * Controller for managing BTO projects in the system.
  * Implements IProjectController and extends ABaseController.
+ * 
+ * Responsible for comprehensive project management operations including:
+ * - Creating new projects
+ * - Updating existing projects
+ * - Deleting projects
+ * - Managing project visibility
+ * - Registering officers for projects
+ * - Retrieving project information
+ * 
+ * @author Your Name
+ * @version 1.0
  */
 public class ProjectController extends ABaseController implements IProjectController {
     
@@ -49,7 +60,25 @@ public class ProjectController extends ABaseController implements IProjectContro
             System.out.println("DEBUG: ProjectDataManager is null");
         }
     }
-    
+
+    /**
+    * Creates a new BTO project with specified details.
+    * 
+    * Validates project creation parameters and ensures:
+    * - No overlapping project periods for the manager
+    * - Proper project initialization
+    * 
+    * @param projectName Name of the project
+    * @param neighborhood Geographical location of the project
+    * @param flatTypes List of flat types available in the project
+    * @param numberOfUnits List of unit counts for each flat type
+    * @param sellingPrices List of selling prices for each flat type
+    * @param openingDate Project application opening date
+    * @param closingDate Project application closing date
+    * @param manager HDB Manager creating the project
+    * @param officerSlots Number of officer slots for the project
+    * @return The created Project object, or null if creation fails
+    */
     @Override
     public Project createProject(String projectName, String neighborhood, 
                                 List<FlatType> flatTypes, List<Integer> numberOfUnits, 
@@ -191,7 +220,18 @@ public class ProjectController extends ABaseController implements IProjectContro
         
         return updated;
     }
-    
+    /**
+    * Deletes a project from the system.
+    * 
+    * Handles complex deletion process including:
+    * - Validating manager authorization
+    * - Updating application statuses
+    * - Removing project from data managers
+    * 
+    * @param projectId Unique identifier of the project to delete
+    * @param manager HDB Manager deleting the project
+    * @return true if project is successfully deleted, false otherwise
+    */
     @Override
     public boolean deleteProject(String projectId, HDBManager manager) {
         // Validate input parameters
@@ -305,6 +345,16 @@ public class ProjectController extends ABaseController implements IProjectContro
         return managerDeleted && dataManagerDeleted;
     }
 
+    /**
+    * Toggles the visibility of a project.
+    * 
+    * Allows managers to show or hide projects from applicants.
+    * 
+    * @param projectId Unique identifier of the project
+    * @param visible New visibility status
+    * @param manager HDB Manager changing project visibility
+    * @return true if visibility is successfully changed, false otherwise
+    */
     @Override
     public boolean toggleProjectVisibility(String projectId, boolean visible, HDBManager manager) {
         // Validate input parameters
@@ -343,7 +393,15 @@ public class ProjectController extends ABaseController implements IProjectContro
         
         return toggled;
     }
-    
+    /**
+    * Registers an HDB Officer for a specific project.
+    * 
+    * Validates officer eligibility and project registration requirements.
+    * 
+    * @param projectId Unique identifier of the project
+    * @param officer HDB Officer to be registered
+    * @return true if officer registration is successful, false otherwise
+    */
     @Override
     public boolean registerOfficerForProject(String projectId, HDBOfficer officer) {
         // Validate input parameters
@@ -384,7 +442,13 @@ public class ProjectController extends ABaseController implements IProjectContro
         System.out.println("DEBUG: Officer registration result: " + registered);
         return registered;
     }
-    
+
+    /**
+    * Retrieves a project by its unique identifier.
+    * 
+    * @param projectId Unique identifier of the project
+    * @return The Project object, or null if not found
+    */
     @Override
     public Project getProjectById(String projectId) {
         // Validate input
@@ -401,7 +465,12 @@ public class ProjectController extends ABaseController implements IProjectContro
         
         return project;
     }
-    
+
+    /**
+    * Retrieves all projects in the system.
+    * 
+    * @return List of all Project objects
+    */
     @Override
     public List<Project> getAllProjects() {
         List<Project> projects = projectDataManager.getAllProjects();
@@ -409,6 +478,12 @@ public class ProjectController extends ABaseController implements IProjectContro
         return projects;
     }
     
+    /**
+    * Retrieves projects managed by a specific HDB Manager.
+    * 
+    * @param manager HDB Manager whose projects are to be retrieved
+    * @return List of Project objects managed by the manager
+    */
     @Override
     public List<Project> getProjectsByManager(HDBManager manager) {
         // Validate input
@@ -427,7 +502,18 @@ public class ProjectController extends ABaseController implements IProjectContro
         
         return projects;
     }
-    
+
+    /**
+    * Retrieves visible projects for a specific applicant.
+    * 
+    * Considers applicant's eligibility criteria such as:
+    * - Marital status
+    * - Age
+    * - Project availability
+    * 
+    * @param applicant Applicant seeking project information
+    * @return List of visible and eligible Project objects
+    */
     @Override
     public List<Project> getVisibleProjectsForApplicant(Applicant applicant) {
 
@@ -542,6 +628,12 @@ public class ProjectController extends ABaseController implements IProjectContro
         return eligibleProjects;
     }
     
+    /**
+    * Retrieves approved officers for a specific project.
+    * 
+    * @param projectId Unique identifier of the project
+    * @return List of approved HDB Officers for the project
+    */
     @Override
     public List<HDBOfficer> getApprovedOfficersForProject(String projectId) {
         // Validate input
@@ -562,6 +654,12 @@ public class ProjectController extends ABaseController implements IProjectContro
         return officers;
     }
     
+    /**
+    * Retrieves the number of remaining officer slots for a project.
+    * 
+    * @param projectId Unique identifier of the project
+    * @return Number of remaining officer slots
+    */
     @Override
     public int getRemainingOfficerSlots(String projectId) {
         // Validate input

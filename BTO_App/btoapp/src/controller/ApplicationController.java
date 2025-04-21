@@ -19,6 +19,15 @@ import service.EligibilityCheckerService;
 /**
  * Controller for managing BTO applications in the system.
  * Implements IApplicationController and extends ABaseController.
+ * 
+ * Handles key application-related operations such as:
+ * - Submitting new applications
+ * - Requesting and managing application withdrawals
+ * - Approving or rejecting applications
+ * - Retrieving applications by various criteria
+ * 
+ * Implements application business logic and integrates with data managers
+ * to persist and retrieve application information.
  */
 public class ApplicationController extends ABaseController implements IApplicationController {
     
@@ -42,6 +51,17 @@ public class ApplicationController extends ABaseController implements IApplicati
         this.eligibilityService = eligibilityService;
     }
     
+    /**
+     * Submits a new application for an applicant.
+     * 
+     * Validates the application submission, creates an application,
+     * and associates it with the applicant and project.
+     * 
+     * @param applicant The applicant submitting the application
+     * @param project The project being applied to
+     * @param flatType The type of flat selected
+     * @return The created Application object, or null if submission fails
+     */
     @Override
     public Application submitApplication(Applicant applicant, Project project, FlatType flatType) {
         System.out.println("DEBUG: Starting application submission for " + applicant.getName());
@@ -105,7 +125,15 @@ public class ApplicationController extends ABaseController implements IApplicati
         return "APP-" + nricPart + "-" + projectPart;
     }
     
-    
+    /**
+     * Requests withdrawal of an existing application.
+     * 
+     * Validates the application ownership and processes the withdrawal request.
+     * 
+     * @param applicationId The unique identifier of the application
+     * @param applicant The applicant requesting withdrawal
+     * @return true if withdrawal request is successful, false otherwise
+     */
     @Override
     public boolean requestWithdrawal(String applicationId, Applicant applicant) {
         // Get the application and validate ownership
@@ -125,6 +153,12 @@ public class ApplicationController extends ABaseController implements IApplicati
         return requested;
     }
     
+    /**
+     * Retrieves all applications for a specific project.
+     * 
+     * @param project The project to retrieve applications for
+     * @return A list of applications for the project
+     */
     @Override
     public List<Application> getApplicationsByProject(Project project) {
         // Validate input
@@ -135,6 +169,13 @@ public class ApplicationController extends ABaseController implements IApplicati
         return applicationDataManager.getApplicationsByProject(project.getProjectName());
     }
     
+    /**
+     * Retrieves applications for a project with a specific status.
+     * 
+     * @param project The project to retrieve applications from
+     * @param status The application status to filter by
+     * @return A list of applications matching the specified status
+     */
     @Override
     public List<Application> getApplicationsByStatus(Project project, ApplicationStatus status) {
         // Get all applications for the project
@@ -162,6 +203,16 @@ public class ApplicationController extends ABaseController implements IApplicati
         return result;
     }
 
+    /**
+     * Approves an application by an HDB Manager.
+     * 
+     * Validates manager authorization and application eligibility,
+     * then changes the application status to approved.
+     * 
+     * @param applicationId The unique identifier of the application
+     * @param manager The HDB Manager approving the application
+     * @return true if the application is successfully approved, false otherwise
+     */
     @Override
     public boolean approveApplication(String applicationId, HDBManager manager) {
         System.out.println("DEBUG: Starting approval of application: " + applicationId);
@@ -208,7 +259,15 @@ public class ApplicationController extends ABaseController implements IApplicati
         
         return approved;
     }
-
+    /**
+     * Rejects an application by an HDB Manager.
+     * 
+     * Validates manager authorization and changes the application status to rejected.
+     * 
+     * @param applicationId The unique identifier of the application
+     * @param manager The HDB Manager rejecting the application
+     * @return true if the application is successfully rejected, false otherwise
+     */
     @Override
     public boolean rejectApplication(String applicationId, HDBManager manager) {
         // Get the application and validate manager authorization
@@ -229,7 +288,15 @@ public class ApplicationController extends ABaseController implements IApplicati
         
         return rejected;
     }
-
+    /**
+     * Approves a withdrawal request for an application by an HDB Manager.
+     * 
+     * Validates manager authorization and processes the withdrawal approval.
+     * 
+     * @param applicationId The unique identifier of the application
+     * @param manager The HDB Manager approving the withdrawal
+     * @return true if the withdrawal is successfully approved, false otherwise
+     */
     @Override
     public boolean approveWithdrawal(String applicationId, HDBManager manager) {
         // Get the application and validate manager authorization
@@ -264,6 +331,15 @@ public class ApplicationController extends ABaseController implements IApplicati
         return approved;
     }
     
+    /**
+     * Rejects a withdrawal request for an application by an HDB Manager.
+     * 
+     * Validates manager authorization and processes the withdrawal rejection.
+     * 
+     * @param applicationId The unique identifier of the application
+     * @param manager The HDB Manager rejecting the withdrawal
+     * @return true if the withdrawal is successfully rejected, false otherwise
+     */
     @Override
     public boolean rejectWithdrawal(String applicationId, HDBManager manager) {
         // Get the application and validate manager authorization
@@ -407,6 +483,7 @@ public class ApplicationController extends ABaseController implements IApplicati
     
     /**
      * Clears the current application reference from an applicant.
+     * Removes the application reference when it is no longer active.
      * 
      * @param application The application to clear from the applicant
      */

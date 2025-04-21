@@ -48,15 +48,28 @@ public abstract class AProject {
         }
         
         // Getters and Setters
-        
+        /**
+         * Gets the flat type.
+         * 
+         * @return the flat type
+         */
         public FlatType getFlatType() {
             return flatType;
         }
         
+        /**
+         * Gets the number of units available for this flat type.
+         * 
+         * @return the number of units
+         */
         public int getNumberOfUnits() {
             return numberOfUnits;
         }
         
+        /**
+         * Decrements the number of available units by one.
+         * Prevents decrementing below zero.
+         */
         public void decrementUnits() {
             if (numberOfUnits > 0) {
                 numberOfUnits--;
@@ -69,7 +82,11 @@ public abstract class AProject {
         public double getSellingPrice() {
             return sellingPrice;
         }
-        
+        /**
+         * Sets the selling price for this flat type.
+         * 
+         * @param sellingPrice The new selling price for the flat type
+         */
         public void setSellingPrice(double sellingPrice) {
             this.sellingPrice = sellingPrice;
         }
@@ -184,66 +201,146 @@ public abstract class AProject {
     
     // Getters and Setters
     
+     /**
+     * Gets the project name.
+     * 
+     * @return the project name
+     */
     public String getProjectName() {
         return projectName;
     }
     
+    /**
+     * Sets the project name.
+     * 
+     * @param projectName The name of the project
+     */
     public void setProjectName(String projectName) {
         this.projectName = projectName;
     }
     
+    /**
+     * Gets the neighborhood of the project.
+     * 
+     * @return the neighborhood
+     */
     public String getNeighborhood() {
         return neighborhood;
     }
     
+    /**
+     * Sets the neighborhood of the project.
+     * 
+     * @param neighborhood The neighborhood
+     */
     public void setNeighborhood(String neighborhood) {
         this.neighborhood = neighborhood;
     }
     
+    /**
+     * Gets the date when applications open.
+     * 
+     * @return the application opening date
+     */
     public Date getApplicationOpeningDate() {
         return applicationOpeningDate;
     }
-    
+
+    /**
+     * Sets the date when applications open.
+     * 
+     * @param applicationOpeningDate The application opening date
+     */
     public void setApplicationOpeningDate(Date applicationOpeningDate) {
         this.applicationOpeningDate = applicationOpeningDate;
     }
-    
+
+    /**
+     * Gets the date when applications close.
+     * 
+     * @return the application closing date
+     */
     public Date getApplicationClosingDate() {
         return applicationClosingDate;
     }
-    
+
+    /**
+     * Sets the date when applications close.
+     * 
+     * @param applicationClosingDate The application closing date
+     */
     public void setApplicationClosingDate(Date applicationClosingDate) {
         this.applicationClosingDate = applicationClosingDate;
     }
     
+    /**
+     * Gets the HDB manager in charge of the project.
+     * 
+     * @return the manager in charge
+     */
     public HDBManager getManagerInCharge() {
         return managerInCharge;
     }
-    
+
+    /**
+     * Sets the HDB manager in charge of the project.
+     * 
+     * @param managerInCharge The manager in charge
+     */
     public void setManagerInCharge(HDBManager managerInCharge) {
         this.managerInCharge = managerInCharge;
     }
-    
+
+    /**
+     * Gets the number of officer slots for this project.
+     * 
+     * @return number of officer slots
+     */
     public int getOfficerSlots() {
         return officerSlots;
     }
-    
+
+     /**
+     * Gets the number of remaining officer slots.
+     * 
+     * @return remaining officer slots
+     */
     public int getRemainingOfficerSlots() {
         return officerSlots - assignedOfficers.size();
     }
-    
+
+    /**
+     * Gets the list of officers assigned to the project.
+     * 
+     * @return list of assigned officers
+     */
     public List<HDBOfficer> getAssignedOfficers() {
         return assignedOfficers;
     }
-    
+
+    /**
+     * Checks if the project is visible.
+     * 
+     * @return true if visible, false otherwise
+     */
     public boolean isVisible() {
         return isVisible;
     }
-    
+
+    /**
+     * Sets the visibility of the project.
+     * 
+     * @param visible true to make visible, false otherwise
+     */
     public void setVisible(boolean visible) {
         this.isVisible = visible;
     }
     
+     /**
+     * Gets the list of flat type information for this project.
+     * 
+     * @return list of flat type info
+     */
     public List<FlatTypeInfo> getFlatTypeInfoList() {
         return flatTypeInfoList;
     }

@@ -57,46 +57,101 @@ public abstract class AUser {
     
     // Getters and Setters
     
+    /**
+     * Retrieves the user's name.
+     *
+     * @return the name of the user
+     */
     public String getName() {
         return name;
     }
     
+    /**
+     * Sets the user's name.
+     *
+     * @param name the name to set
+     */
     public void setName(String name) {
         this.name = name;
     }
     
+    /**
+     * Retrieves the user's NRIC.
+     *
+     * @return the NRIC of the user
+     */
     public String getNric() {
         return nric;
     }
     
+    /**
+     * Sets the user's NRIC.
+     *
+     * @param nric the NRIC to set
+     */
     public void setNric(String nric) {
         this.nric = nric;
     }
     
+    /**
+     * Retrieves the user's age.
+     *
+     * @return the age of the user
+     */
     public int getAge() {
         return age;
     }
     
+    /**
+     * Sets the user's age.
+     *
+     * @param age the age to set
+     */
     public void setAge(int age) {
         this.age = age;
     }
     
+    /**
+     * Retrieves the user's marital status.
+     *
+     * @return the marital status of the user
+     */
     public String getMaritalStatus() {
         return maritalStatus;
     }
     
+    /**
+     * Sets the user's marital status.
+     *
+     * @param maritalStatus the marital status to set
+     */
     public void setMaritalStatus(String maritalStatus) {
         this.maritalStatus = maritalStatus;
     }
-    
+    /**
+     * Retrieves the user's password.
+     * Protected to limit access to subclasses.
+     * 
+     * @return The user's password
+     */
     protected String getPassword() {
         return password;
     }
-    
+
+    /**
+     * Retrieves the user's role.
+     *
+     * @return the role of the user
+     */
     public UserRole getRole() {
         return role;
     }
-    
+    /**
+     * Sets the user's role.
+     * Protected to limit role modification to subclasses.
+     * 
+     * @param role The new role for the user
+     */
     protected void setRole(UserRole role) {
         this.role = role;
     }

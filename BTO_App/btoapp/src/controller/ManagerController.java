@@ -1,22 +1,26 @@
 package controller;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
 import controller.abstracts.ABaseController;
 import controller.interfaces.IManagerController;
 import datamanager.ManagerDataManager;
 import datamanager.OfficerDataManager;
 import datamanager.ProjectDataManager;
+import java.util.ArrayList;
+import java.util.List;
 import model.HDBManager;
 import model.HDBOfficer;
 import model.Project;
-import model.enums.FlatType;
 
 /**
  * Controller for managing HDB Manager operations in the BTO system.
  * Focuses on project management and officer registration approval.
+ * 
+ * Handles key manager-related functionalities:
+ * - Officer registration approval
+ * - Managing officer assignments to projects
+ * 
+ * @author name
+ * @version 1.0
  */
 public class ManagerController extends ABaseController implements IManagerController {
     
@@ -39,6 +43,17 @@ public class ManagerController extends ABaseController implements IManagerContro
         this.officerDataManager = officerDataManager;
     }
     
+    /**
+    * Approves an HDB Officer's registration for a specific project.
+    * 
+    * Validates that:
+    * - The officer has a pending registration
+    * - The manager is in charge of the officer's assigned project
+    * 
+    * @param officer The HDB Officer being registered
+    * @param manager The HDB Manager approving the registration
+    * @return true if registration is successfully approved, false otherwise
+    */
     @Override
     public boolean approveOfficerRegistration(HDBOfficer officer, HDBManager manager) {
         // Validate input parameters
@@ -73,6 +88,12 @@ public class ManagerController extends ABaseController implements IManagerContro
         return approved;
     }
     
+    /**
+    * Retrieves a list of officers with pending registration for a specific project.
+    * 
+    * @param projectId Unique identifier of the project
+    * @return List of HDB Officers awaiting registration approval
+    */
     @Override
     public List<HDBOfficer> getPendingOfficersForProject(String projectId) {
         // Validate input

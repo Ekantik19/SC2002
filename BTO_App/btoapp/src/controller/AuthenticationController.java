@@ -18,6 +18,10 @@ import model.enums.ApplicationStatus;
  * Authentication Controller for the BTO Management System.
  * Handles user authentication, session management, and user lookup.
  * 
+ * This controller extends the abstract authentication controller 
+ * and provides concrete implementation for user management specific 
+ * to the BTO system.
+ * 
  * @author Your Name
  * @version 1.0
  */

@@ -16,8 +16,9 @@ public class PasswordChangeView extends ARenderView implements ViewInterface{
     
     /**
      * Constructor for PasswordChangeView.
-     * 
+     *
      * @param currentUser The currently logged-in user
+     * @param authController The authentication controller to handle password changes
      */
     public PasswordChangeView(User currentUser,AuthenticationController authcontroller) {
         this.currentUser = currentUser;
@@ -25,6 +26,9 @@ public class PasswordChangeView extends ARenderView implements ViewInterface{
         this.scanner = new Scanner(System.in);
     }
 
+    /**
+     * Displays the password change view to the user.
+     */
     public void display() {
         printHeader("CHANGE PASSWORD");
         
@@ -52,11 +56,21 @@ public class PasswordChangeView extends ARenderView implements ViewInterface{
         }
     }
     
+    /**
+     * Shows a message to the user.
+     *
+     * @param message The message to display
+     */
     @Override
     public void showMessage(String message) {
         System.out.println("\n>>> " + message);
     }
     
+    /**
+     * Shows an error message to the user.
+     *
+     * @param error The error message to display
+     */
     @Override
     public void showError(String error) {
         System.out.println("\n!!! ERROR: " + error);

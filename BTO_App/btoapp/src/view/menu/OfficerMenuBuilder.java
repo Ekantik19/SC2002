@@ -19,6 +19,12 @@ public class OfficerMenuBuilder implements MenuBuilder {
         this.officer = officer;
     }
     
+    /**
+     * Builds and returns the menu options for the HDB Officer.
+     * Includes additional applicant options if the officer has any application.
+     *
+     * @return a map containing menu option numbers and their descriptions
+     */
     @Override
     public Map<Integer, String> buildMenu() {
         Map<Integer, String> menuOptions = new LinkedHashMap<>();

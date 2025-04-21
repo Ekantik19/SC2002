@@ -84,24 +84,49 @@ public class Applicant extends User {
         return new ArrayList<>(enquiries);
     }
 
+    /**
+     * Checks if the applicant has booked a flat.
+     *
+     * @return true if a flat has been booked, false otherwise
+     */
     public boolean hasBookedFlat() {
         return bookedFlatType != null && bookedProject != null;
     }
 
     // Getters and Setters
 
+    /**
+     * Retrieves the current application of the applicant.
+     *
+     * @return The current application
+     */
     public Application getCurrentApplication() {
         return currentApplication;
     }
 
+    /**
+     * Sets the current application for the applicant.
+     *
+     * @param currentApplication The application to set
+     */
     public void setCurrentApplication(Application currentApplication) {
         this.currentApplication = currentApplication;
     }
 
+    /**
+     * Sets the flat type that the applicant has booked.
+     *
+     * @param bookedFlatType The flat type to set
+     */
     public void setBookedFlatType(FlatType bookedFlatType) {
         this.bookedFlatType = bookedFlatType;
     }
 
+    /**
+     * Sets the project where the applicant has booked a flat.
+     *
+     * @param bookedProject The project to set
+     */
     public void setBookedProject(Project bookedProject) {
         this.bookedProject = bookedProject;
     }

@@ -7,6 +7,12 @@ import java.util.Map;
  * Menu builder for HDB Manager users.
  */
 public class ManagerMenuBuilder implements MenuBuilder {
+
+    /**
+     * Constructs the manager menu with available options and their corresponding keys.
+     *
+     * @return a {@code Map} mapping option numbers to their descriptions for the manager menu
+     */
     @Override
     public Map<Integer, String> buildMenu() {
         Map<Integer, String> menuOptions = new LinkedHashMap<>();
