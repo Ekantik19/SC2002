@@ -10,8 +10,13 @@ import java.util.Scanner;
  * @version 1.0
  */
 public abstract class ARenderView {
+    /**
+     * Scanner object used to read user input from the console.
+     * This scanner is initialized to read from System.in and is
+     * shared among all methods in the class that need to capture
+     * user input.
+     */
     protected Scanner scanner = new Scanner(System.in);
-    
     // Common rendering methods
 
     /**

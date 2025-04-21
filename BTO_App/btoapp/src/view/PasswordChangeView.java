@@ -20,9 +20,9 @@ public class PasswordChangeView extends ARenderView implements ViewInterface{
      * @param currentUser The currently logged-in user
      * @param authController The authentication controller to handle password changes
      */
-    public PasswordChangeView(User currentUser,AuthenticationController authcontroller) {
+    public PasswordChangeView(User currentUser,AuthenticationController authController) {
         this.currentUser = currentUser;
-        this.authController=authcontroller;
+        this.authController=authController;
         this.scanner = new Scanner(System.in);
     }
 

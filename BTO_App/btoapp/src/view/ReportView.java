@@ -32,7 +32,10 @@ public class ReportView extends ARenderView implements ViewInterface{
         this.scanner = new Scanner(System.in);
     }
  
-    /*displays interface for Report */
+    /*
+    *
+    * displays interface for Report
+    */
     public void display() {
         printHeader("REPORT GENERATION");
         

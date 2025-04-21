@@ -78,10 +78,16 @@ public abstract class AProject {
                 System.out.println("DEBUG: Cannot decrement. No units available.");
             }
         }
-        
+
+        /**
+         * Gets the selling price for this flat type.
+         *
+         * @return the selling price as a double value
+         */
         public double getSellingPrice() {
             return sellingPrice;
         }
+
         /**
          * Sets the selling price for this flat type.
          * 

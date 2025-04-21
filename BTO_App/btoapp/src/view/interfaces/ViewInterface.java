@@ -7,6 +7,17 @@ package view.interfaces;
  * @version 1.0
  */
 public interface ViewInterface {
+
+    /**
+     * Shows a message to the user.
+     *
+     * @param message The message to display
+     */
     void showMessage(String message);
+    /**
+     * Shows an error message to the user.
+     *
+     * @param error The error message to display
+     */
     void showError(String error);
 }

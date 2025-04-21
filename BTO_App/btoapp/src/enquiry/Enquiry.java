@@ -1,7 +1,6 @@
 package enquiry;
 
 import java.util.Date;
-
 import model.Applicant;
 import model.Project;
 
@@ -43,10 +42,10 @@ public class Enquiry extends Repliable {
      * Constructs a new Enquiry object with the specified question, applicant, and project.
      *
      * @param enquiryId Enquiry ID assoiciated with enquiry
-     * @param reply reply from manager or officer
      * @param question  the question associated with this enquiry
      * @param applicant the applicant making the enquiry
      * @param project   the project the enquiry is about
+     * @param submissionDate the submission date of enquiry
      */
     public Enquiry(String enquiryId, Applicant applicant, Project project, String question, Date submissionDate) {
         super(applicant);
@@ -78,7 +77,7 @@ public class Enquiry extends Repliable {
     /**
      * Sets the question associated with this enquiry.
      *
-     * @param question the new question for this enquiry
+     * @param text new question for this enquiry
      */
     public void setEnquiryText(String text) {
         this.question = text;

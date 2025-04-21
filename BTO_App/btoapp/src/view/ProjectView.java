@@ -48,6 +48,10 @@ public class ProjectView extends ARenderView implements ViewInterface{
             this.scanner = new Scanner(System.in);
     }
 
+    /**
+     * interface to display respective project view for each role
+     *
+     */
     public void display() {
         if (currentUser instanceof Applicant) {
             displayProjectsForApplicant((Applicant) currentUser);
