@@ -12,20 +12,6 @@ The application follows the Model-View-Controller (MVC) architecture:
 - **View**: Classes that handle user interface and display information to users
 - **Controller**: Classes that contain business logic and coordinate between models and views
 
-## Key Components
-
-### Models
-- Representation of the respective objects
-
-### Views
-- Handles the display interfaces
-
-### Controllers
-- Handles respective operations
-
-### Data Managers
-- Handles loading and saving data
-
 ## Setup and Installation
 
 1. Clone the repository
