@@ -1,5 +1,5 @@
 # SC2002-Assignment: BTO Management System
-![me]([https://github.com/Daisyliu6/Daisyliu6/blob/master/me.gif](https://github.com/Ekantik19/SC2002/blob/main/BTO_GIF.gif)
+![BTO Management System Demo](https://github.com/Ekantik19/SC2002/raw/main/BTO_GIF.gif)
 
 ## Project Overview
 
