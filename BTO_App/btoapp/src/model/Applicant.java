@@ -52,10 +52,7 @@ public class Applicant extends User {
      */
     public void addEnquiry(Enquiry enquiry) {
         if (enquiry != null) {
-            System.out.println("DEBUG: Adding enquiry " + enquiry.getEnquiryId() + 
-                              " to applicant " + getName());
             enquiries.add(enquiry);
-            System.out.println("DEBUG: Applicant now has " + enquiries.size() + " enquiries");
         }
     }
 
@@ -66,10 +63,10 @@ public class Applicant extends User {
     */
     public void removeEnquiry(Enquiry enquiry) {
         if (enquiry != null) {
-            System.out.println("DEBUG: Removing enquiry " + enquiry.getEnquiryId() + 
+            System.out.println("Removing enquiry " + enquiry.getEnquiryId() + 
                             " from applicant " + getName());
             boolean removed = enquiries.remove(enquiry);
-            System.out.println("DEBUG: Removal result: " + removed);
+            System.out.println("Removal result: " + removed);
         }
     }
 
@@ -79,7 +76,7 @@ public class Applicant extends User {
      * @return a list of enquiries made by the applicant
      */
     public List<Enquiry> getEnquiries() {
-        System.out.println("DEBUG: Getting enquiries for applicant " + getName() + 
+        System.out.println("Getting enquiries for applicant " + getName() + 
                         ", count: " + enquiries.size());
         return new ArrayList<>(enquiries);
     }

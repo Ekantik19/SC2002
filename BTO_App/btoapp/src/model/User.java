@@ -42,10 +42,6 @@ public class User extends AUser implements IUserManagement {
      */
     @Override
     public boolean authenticate(String nric, String password) {
-        System.out.println("DEBUG: User.authenticate - checking NRIC: " + nric);
-        System.out.println("DEBUG: User.authenticate - checking password: '" + password + "'");
-        System.out.println("DEBUG: User.authenticate - stored NRIC: " + getNric());
-        System.out.println("DEBUG: User.authenticate - stored password: '" + getPassword() + "'");
         
         return getNric().equals(nric) && validatePassword(password);
     }
@@ -57,9 +53,7 @@ public class User extends AUser implements IUserManagement {
      * @return {@code true} if the password matches, {@code false} otherwise
      */
     private boolean validatePassword(String password) {
-        System.out.println("DEBUG: User.validatePassword - comparing '" + password + "' with '" + getPassword() + "'");
         boolean result = getPassword().equals(password);
-        System.out.println("DEBUG: User.validatePassword - result: " + result);
         return result;
     }
     

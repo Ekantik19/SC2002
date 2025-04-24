@@ -115,7 +115,7 @@ public class BookingController extends ABaseController implements IBookingContro
             return false;
         }
 
-        System.out.println("DEBUG: Attempting to book flat for application: " + applicationId);
+        System.out.println(" Attempting to book flat for application: " + applicationId);
         
         // Book the flat
         boolean booked = application.bookFlat();
@@ -134,7 +134,7 @@ public class BookingController extends ABaseController implements IBookingContro
             projectDataManager.updateProject(project);
         }
         
-        System.out.println("DEBUG: Booking result: " + booked);
+        System.out.println(" Booking result: " + booked);
         return booked;
     }
     

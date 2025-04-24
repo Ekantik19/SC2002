@@ -58,19 +58,14 @@ public class Project extends AProject {
         this.applications = new HashSet<>();
         this.enquiries = new HashSet<>();
         
-        System.out.println("DEBUG: Creating project with full constructor: " + projectName);
-        
         // Add flat types
         if (flatTypes != null && numberOfUnits != null && sellingPrices != null) {
             int minSize = Math.min(flatTypes.size(), 
                          Math.min(numberOfUnits.size(), sellingPrices.size()));
             
-            System.out.println("DEBUG: Adding " + minSize + " flat types to project " + projectName);
             for (int i = 0; i < minSize; i++) {
                 if (flatTypes.get(i) != null) {
                     addFlatType(flatTypes.get(i), numberOfUnits.get(i), sellingPrices.get(i));
-                    System.out.println("DEBUG: Added " + flatTypes.get(i) + " with " + 
-                                      numberOfUnits.get(i) + " units at $" + sellingPrices.get(i));
                 }
             }
         }
@@ -106,10 +101,8 @@ public class Project extends AProject {
     public void addEnquiry(Enquiry enquiry) {
         if (enquiry != null) {
             enquiries.add(enquiry);
-            System.out.println("DEBUG: Added enquiry " + enquiry.getEnquiryId() + 
-                               " to project " + getProjectName());
         } else {
-            System.out.println("DEBUG: Attempted to add null enquiry to project " + 
+            System.out.println("Attempted to add empty enquiry to project " + 
                                getProjectName());
         }
     }

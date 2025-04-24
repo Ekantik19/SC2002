@@ -73,7 +73,6 @@ public class ManagerDataManager {
                 String[] parts = line.split("\t");
                 
                 if (parts.length < 5) {
-                    System.out.println("Invalid manager data format: " + line);
                     continue;
                 }
                 
@@ -154,7 +153,7 @@ public class ManagerDataManager {
      */
     public boolean updateManager(HDBManager manager) {
         if (manager == null || !validateNRICFormat(manager.getNric())) {
-            System.out.println("DEBUG: Invalid manager or NRIC format");
+            System.out.println("Invalid manager or NRIC format");
             return false;
         }
         
@@ -162,7 +161,7 @@ public class ManagerDataManager {
         
         // If the manager doesn't exist, add a log message
         if (!managerMap.containsKey(nric)) {
-            System.out.println("DEBUG: Manager not found in map. Adding new manager: " + nric);
+            System.out.println("Manager not found in map. Adding new manager: " + nric);
         }
         
         // Always update/add the manager to the map

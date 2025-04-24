@@ -64,51 +64,45 @@ public class ApplicationController extends ABaseController implements IApplicati
      */
     @Override
     public Application submitApplication(Applicant applicant, Project project, FlatType flatType) {
-        System.out.println("DEBUG: Starting application submission for " + applicant.getName());
+        System.out.println("Starting application submission for " + applicant.getName());
 
         if (applicant instanceof HDBOfficer) {
         HDBOfficer officer = (HDBOfficer) applicant;
             if (officer.isAssignedToProject(project)) {
-                System.out.println("DEBUG: Officer is trying to apply for a project they're handling");
+                System.out.println("Officer is trying to apply for a project they're handling");
                 return null;
             }
         }   
         
         // Validate input parameters
         if (!validateInputForSubmission(applicant, project, flatType)) {
-            System.out.println("DEBUG: Input validation failed");
+            System.out.println("Input validation failed");
             return null;
         }
         
-        System.out.println("DEBUG: Input validation passed");
+        System.out.println("Input validation passed");
         
         // Create new application with a generated ID
-        System.out.println("DEBUG: Creating application object");
         String applicationId = generateApplicationId(applicant.getNric(), project.getProjectName());
         Application application = new Application(applicationId, applicant, project, flatType);
         
-        System.out.println("DEBUG: Application object created with ID: " + application.getApplicationId());
-        
         // Add to data manager
-        System.out.println("DEBUG: Adding application to data manager");
         boolean added = applicationDataManager.addApplication(application);
-        System.out.println("DEBUG: Data manager result: " + (added ? "success" : "failed"));
         
         if (added) {
             // Update applicant's current application
-            System.out.println("DEBUG: Updating applicant's current application");
+            System.out.println("Updating applicant's current application");
             applicant.setCurrentApplication(application);
             boolean applicantUpdated = applicantDataManager.updateApplicant(applicant);
-            System.out.println("DEBUG: Applicant update result: " + (applicantUpdated ? "success" : "failed"));
+            System.out.println("Applicant update result: " + (applicantUpdated ? "success" : "failed"));
             
             // Add application to project
-            System.out.println("DEBUG: Adding application to project");
             project.addApplication(application);
             
             return application;
         }
         
-        System.out.println("DEBUG: Application submission failed");
+        System.out.println("Application submission failed");
         return null;
     }
     
@@ -181,13 +175,13 @@ public class ApplicationController extends ABaseController implements IApplicati
         // Get all applications for the project
         List<Application> projectApplications = getApplicationsByProject(project);
         
-        System.out.println("DEBUG: getApplicationsByStatus - Found " + projectApplications.size() + 
+        System.out.println("Get applications by status - Found " + projectApplications.size() + 
                         " applications for project " + project.getProjectName());
         
         // List all applications for this project with their status
-        System.out.println("DEBUG: Applications in project " + project.getProjectName() + ":");
+        System.out.println("Applications in project " + project.getProjectName() + ":");
         for (Application app : projectApplications) {
-            System.out.println("DEBUG: - App ID: " + app.getApplicationId() + 
+            System.out.println("App ID: " + app.getApplicationId() + 
                             ", Applicant: " + app.getApplicant().getName() + 
                             " (" + app.getApplicant().getNric() + ")" +
                             ", Status: " + app.getStatus());
@@ -198,7 +192,7 @@ public class ApplicationController extends ABaseController implements IApplicati
                 .filter(app -> app.getStatus() == status)
                 .collect(Collectors.toList());
         
-        System.out.println("DEBUG: After filtering, found " + result.size() + 
+        System.out.println("After filtering, found " + result.size() + 
                         " applications with status " + status);
         return result;
     }
@@ -215,46 +209,44 @@ public class ApplicationController extends ABaseController implements IApplicati
      */
     @Override
     public boolean approveApplication(String applicationId, HDBManager manager) {
-        System.out.println("DEBUG: Starting approval of application: " + applicationId);
+        System.out.println("Starting approval of application: " + applicationId);
         
         // Get the application and validate manager authorization
         Application application = getAndValidateManagerAuthorization(applicationId, manager);
         if (application == null) {
-            System.out.println("DEBUG: Application validation failed for: " + applicationId);
+            System.out.println("Application validation failed for: " + applicationId);
             return false;
         }
         
         // Check if there are available units for the selected flat type
         if (!application.getProject().hasAvailableUnits(application.getSelectedFlatType())) {
-            System.out.println("DEBUG: No available units for the selected flat type.");
+            System.out.println("No available units for the selected flat type.");
             return false;
         }
         
         // Log status before approval for debugging
-        System.out.println("DEBUG: Application status before approval: " + application.getStatus());
+        System.out.println("Application status before approval: " + application.getStatus());
         
         // Approve the application
         boolean approved = application.approve();
         
         // Log status after approval for debugging
-        System.out.println("DEBUG: Application status after approval: " + application.getStatus());
+        System.out.println("Application status after approval: " + application.getStatus());
         
         // Update application in memory and file if approval was successful
         if (approved) {
-            System.out.println("DEBUG: Updating application " + applicationId + " in data manager with status: " + application.getStatus());
+            System.out.println("Updating application " + applicationId + " in data manager with status: " + application.getStatus());
             
             // Update in memory
             boolean updated = applicationDataManager.updateApplication(application);
-            System.out.println("DEBUG: In-memory update result: " + (updated ? "success" : "failed"));
             
             if (updated) {
                 // Use the direct file update method instead of saving all applications
                 boolean fileUpdated = applicationDataManager.updateApplicationStatusInFile(applicationId, ApplicationStatus.SUCCESSFUL);
-                System.out.println("DEBUG: File update result: " + (fileUpdated ? "success" : "failed"));
                 return fileUpdated;
             }
         } else {
-            System.out.println("DEBUG: Application approval failed");
+            System.out.println("Application approval failed");
         }
         
         return approved;
@@ -376,35 +368,35 @@ public class ApplicationController extends ABaseController implements IApplicati
     private boolean validateInputForSubmission(Applicant applicant, Project project, FlatType flatType) {
         // Validate input parameters
         if (!validateNotNull(applicant, "Applicant")) {
-            System.out.println("DEBUG: Applicant is null");
+            System.out.println("Applicant does not exist");
             return false;
         }
         
         if (!validateNotNull(project, "Project")) {
-            System.out.println("DEBUG: Project is null");
+            System.out.println("Project does not exist");
             return false;
         }
         
         if (!validateNotNull(flatType, "Flat Type")) {
-            System.out.println("DEBUG: Flat Type is null");
+            System.out.println("Flat Type is non-existant");
             return false;
         }
         
         // Check if the applicant already has an active application
         if (applicant.hasActiveApplication()) {
-            System.out.println("DEBUG: Applicant already has an active application.");
+            System.out.println("Applicant already has an active application.");
             return false;
         }
         
         // Check if project is open for applications
         if (!project.isOpenForApplications()) {
-            System.out.println("DEBUG: Project is not currently open for applications.");
+            System.out.println("Project is not currently open for applications.");
             return false;
         }
         
         // Check applicant eligibility for the flat type
         if (!eligibilityService.isEligibleForFlatType(applicant, flatType)) {
-            System.out.println("DEBUG: Applicant is not eligible for the selected flat type.");
+            System.out.println("Applicant is not eligible for the selected flat type.");
             return false;
         }
         
@@ -413,11 +405,11 @@ public class ApplicationController extends ABaseController implements IApplicati
                 .anyMatch(info -> info.getFlatType() == flatType);
         
         if (!flatTypeAvailable) {
-            System.out.println("DEBUG: Selected flat type is not available in this project.");
+            System.out.println("Selected flat type is not available in this project.");
             return false;
         }
         
-        System.out.println("DEBUG: All validation checks passed");
+        System.out.println("All validation checks passed");
         return true;
     }
     

@@ -43,43 +43,34 @@ public abstract class AAuthenticationController extends ABaseController implemen
      */
     @Override
     public User login(String nric, String password) {
-        // Debug outputs
-        System.out.println("DEBUG: Attempting login with NRIC: " + nric);
-        System.out.println("DEBUG: Total users in userMap: " + userMap.size());
-        
+ 
         // Validate input
         if (!validateNotNullOrEmpty(nric, "NRIC") || !validateNotNullOrEmpty(password, "Password")) {
-            System.out.println("DEBUG: Invalid input - NRIC or password empty");
+            System.out.println("Invalid input - NRIC or password empty");
             return null;
         }
         
         // Normalize NRIC
         nric = nric.toUpperCase();
         
-        // Debug output for all users in the map
-        System.out.println("DEBUG: Users in map:");
-        for (String key : userMap.keySet()) {
-            System.out.println("DEBUG: - " + key + ": " + userMap.get(key).getName());
-        }
-        
         // Check if user exists
         User user = userMap.get(nric);
         if (user == null) {
-            System.out.println("DEBUG: User not found for NRIC: " + nric);
+            System.out.println("User not found for NRIC: " + nric);
             return null;
         }
         
-        System.out.println("DEBUG: Found user: " + user.getName());
-        System.out.println("DEBUG: Stored password: " + user.getPassword());
+        System.out.println("Found user: " + user.getName());
+        System.out.println("Stored password: " + user.getPassword());
         
         // Validate password
         if (user.authenticate(nric, password)) {
-            System.out.println("DEBUG: Authentication successful");
+            System.out.println("Authentication successful");
             currentUser = user;
             return user;
         }
         
-        System.out.println("DEBUG: Authentication failed - password mismatch");
+        System.out.println("Authentication failed - password mismatch");
         return null;
     }
     

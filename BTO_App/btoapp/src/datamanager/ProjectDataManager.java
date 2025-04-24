@@ -59,16 +59,6 @@ public class ProjectDataManager extends DataManager {
         this.officerMap = officerMap;
         this.filePath = FilePathConfig.PROJECT_LIST_PATH;
         
-        // Debug output
-        System.out.println("DEBUG: ProjectDataManager initialized with " + 
-                          (managerMap != null ? managerMap.size() : 0) + " managers and " +
-                          (officerMap != null ? officerMap.size() : 0) + " officers");
-        
-        // Log manager information
-        if (managerMap != null) {
-            System.out.println("DEBUG: Available managers: " + String.join(", ", managerMap.keySet()));
-        }
-        
         // Load projects on initialization
         loadProjects();
     }
@@ -83,13 +73,9 @@ public class ProjectDataManager extends DataManager {
     * @return List of loaded Project objects
     */
     public List<Project> loadProjects() {
-        System.out.println("DEBUG: Loading projects from: " + filePath);
         File file = new File(filePath);
-        System.out.println("DEBUG: File exists: " + file.exists());
         
         if (!file.exists()) {
-            System.out.println("DEBUG: ⚠️ WARNING: Project file not found at: " + filePath);
-            System.out.println("DEBUG: Current working directory: " + System.getProperty("user.dir"));
             return new ArrayList<>();
         }
         
@@ -99,7 +85,6 @@ public class ProjectDataManager extends DataManager {
             
             while ((line = reader.readLine()) != null) {
                 if (isHeader) {
-                    System.out.println("DEBUG: Project header: " + line);
                     isHeader = false;
                     continue; // Skip the header row
                 }
@@ -108,15 +93,10 @@ public class ProjectDataManager extends DataManager {
                     continue;
                 }
                 
-                System.out.println("DEBUG: Processing project line: " + line);
-                
                 try {
                     Project project = parseProjectFromLine(line);
                     if (project != null) {
-                        System.out.println("DEBUG: Created project: " + project.getProjectName());
                         projectMap.put(project.getProjectName(), project);
-                        System.out.println("DEBUG: Added project to map with key: '" + 
-                                        project.getProjectName() + "'");
                         
                         // Fix the officer-project relationship
                         List<HDBOfficer> officers = project.getAssignedOfficers();
@@ -124,8 +104,6 @@ public class ProjectDataManager extends DataManager {
                             // Update the officer's assigned project
                             officer.setAssignedProject(project); 
                             officer.setRegistrationApproved(true);
-                            System.out.println("DEBUG: Updated officer " + officer.getName() + 
-                                            " with project assignment to " + project.getProjectName());
                             
                             // Also update in officer map
                             if (officerMap.containsKey(officer.getNric())) {
@@ -133,20 +111,17 @@ public class ProjectDataManager extends DataManager {
                             }
                         }
                     } else {
-                        System.out.println("DEBUG: Failed to parse project from line");
+                        System.out.println("Failed to parse project from line");
                     }
                 } catch (Exception e) {
-                    System.out.println("DEBUG: Error parsing project: " + e.getMessage());
+                    System.out.println("Error parsing project: " + e.getMessage());
                     e.printStackTrace();
                 }
             }
             
-            System.out.println("DEBUG: Loaded " + projectMap.size() + " projects");
-            System.out.println("DEBUG: Project map keys: " + String.join(", ", projectMap.keySet()));
-            
             return new ArrayList<>(projectMap.values());
         } catch (IOException e) {
-            System.out.println("DEBUG: ⚠️ ERROR reading project data: " + e.getMessage());
+            System.out.println("ERROR reading project data: " + e.getMessage());
             e.printStackTrace();
             return new ArrayList<>();
         }
@@ -169,8 +144,6 @@ public class ProjectDataManager extends DataManager {
             String[] parts = line.split(DELIMITER);
             
             if (parts.length < 12) {
-                System.out.println("DEBUG: Invalid project data format (not enough fields): " + parts.length);
-                System.out.println("DEBUG: Expected at least 12 fields, got: " + parts.length);
                 return null;
             }
             
@@ -218,9 +191,9 @@ public class ProjectDataManager extends DataManager {
                     openingDate = dateFormat.parse(parts[8].trim());
                     closingDate = dateFormat.parse(parts[9].trim());
                 } catch (ParseException e2) {
-                    System.out.println("DEBUG: Error parsing dates: " + e2.getMessage());
-                    System.out.println("DEBUG: Opening date string: '" + parts[8].trim() + "'");
-                    System.out.println("DEBUG: Closing date string: '" + parts[9].trim() + "'");
+                    System.out.println("Error parsing dates: " + e2.getMessage());
+                    System.out.println("Opening date string: '" + parts[8].trim() + "'");
+                    System.out.println("Closing date string: '" + parts[9].trim() + "'");
                     return null;
                 }
             }
@@ -244,9 +217,6 @@ public class ProjectDataManager extends DataManager {
             }
             
             if (manager == null) {
-                System.out.println("DEBUG: Manager not found for: " + managerNric);
-                System.out.println("DEBUG: Available managers: " + 
-                                  (managerMap != null ? String.join(", ", managerMap.keySet()) : "none"));
                 return null;
             }
             
@@ -276,7 +246,7 @@ public class ProjectDataManager extends DataManager {
             
             return project;
         } catch (Exception e) {
-            System.out.println("DEBUG: Error in parseProjectFromLine: " + e.getMessage());
+            System.out.println("Error in parseProjectFromLine: " + e.getMessage());
             e.printStackTrace();
             return null;
         }
@@ -298,7 +268,7 @@ public class ProjectDataManager extends DataManager {
                 return officer;
             }
         }
-        System.out.println("DEBUG: Officer not found by name: " + name);
+        System.out.println("Officer not found by name: " + name);
         return null;
     }
     
@@ -308,7 +278,6 @@ public class ProjectDataManager extends DataManager {
     * @return List of all Project objects
     */
     public List<Project> getAllProjects() {
-        System.out.println("DEBUG: getAllProjects returning " + projectMap.size() + " projects");
         return new ArrayList<>(projectMap.values());
     }
 
@@ -326,8 +295,8 @@ public class ProjectDataManager extends DataManager {
         Project project = projectMap.get(projectName);
         
         if (project == null) {
-            System.out.println("DEBUG: Project not found by name: " + projectName);
-            System.out.println("DEBUG: Available projects: " + String.join(", ", projectMap.keySet()));
+            System.out.println("Project not found by name: " + projectName);
+            System.out.println("Available projects: " + String.join(", ", projectMap.keySet()));
         }
         
         return project;
@@ -345,8 +314,7 @@ public class ProjectDataManager extends DataManager {
         if (project != null && project.getProjectName() != null) {
             projectMap.put(project.getProjectName(), project);
             
-            System.out.println("DEBUG: Added project to projectMap: " + project.getProjectName());
-            System.out.println("DEBUG: projectMap now contains " + projectMap.size() + " projects");
+            System.out.println("Added project " + project.getProjectName());
             return saveProjects();
         }
         return false;
@@ -445,7 +413,7 @@ public class ProjectDataManager extends DataManager {
                 writer.newLine();
             }
             
-            System.out.println("DEBUG: Saved " + projectMap.size() + " projects to file: " + filePath);
+            System.out.println("Saved " + projectMap.size() + " projects");
             return true;
         } catch (IOException e) {
             System.out.println("ERROR: Failed to save projects to file: " + e.getMessage());
@@ -464,17 +432,13 @@ public class ProjectDataManager extends DataManager {
     */
     public boolean removeProject(String projectId) {
         if (projectId != null && projectMap.containsKey(projectId)) {
-            // Log what we're removing
-            System.out.println("DEBUG: Removing project from projectMap: " + projectId);
-            Project project = projectMap.get(projectId);
             
             // Remove project from the map
             projectMap.remove(projectId);
-            System.out.println("DEBUG: Project removed from memory. Map size is now: " + projectMap.size());
+            System.out.println("Project removed. There is " + projectMap.size()+ "projects left");
             
             // Save projects file
             boolean saved = saveProjects();
-            System.out.println("DEBUG: ProjectList.txt saved result: " + saved);
             
             return saved;
         }

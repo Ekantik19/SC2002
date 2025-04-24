@@ -37,23 +37,14 @@ public class App {
             scanner = new Scanner(System.in);
 
             // Initialize data managers
-            System.out.println("Initializing data managers...");
             ApplicantDataManager applicantDataManager = new ApplicantDataManager();
             OfficerDataManager officerDataManager = new OfficerDataManager();
             ManagerDataManager managerDataManager = new ManagerDataManager();
 
             // Debug: Check if files exist and load data
-            System.out.println("Loading applicant data...");
             List<Applicant> applicants = applicantDataManager.readAllApplicants();
-            System.out.println("Loaded " + applicants.size() + " applicants");
-
-            System.out.println("Loading officer data...");
             boolean officersLoaded = officerDataManager.loadOfficerData();
-            System.out.println("Officers loaded: " + officersLoaded);
-
-            System.out.println("Loading manager data...");
             boolean managersLoaded = managerDataManager.loadManagerData();
-            System.out.println("Managers loaded: " + managersLoaded);
 
             Map<String, model.HDBManager> managerMap = managerDataManager.getAllManagers().stream()
                 .collect(java.util.stream.Collectors.toMap(

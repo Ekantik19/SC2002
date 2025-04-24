@@ -268,7 +268,6 @@ public class MenuNavigator {
      */
     public boolean navigate(int option) {
         System.out.println("User role: " + currentUser.getRole());
-        System.out.println("User class: " + currentUser.getClass().getSimpleName());
         
         MenuAction action = null;
         

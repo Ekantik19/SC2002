@@ -39,7 +39,6 @@ public class OfficerDataManager {
      * @return true if the data was successfully loaded, false otherwise
      */
     public boolean loadOfficerData() {
-        System.out.println("DEBUG: Loading officers from: " + filePath);
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
             // Skip header line
@@ -50,7 +49,6 @@ public class OfficerDataManager {
                 
                 // Ensure we have all required data
                 if (parts.length < 5) {
-                    System.out.println("Invalid officer data format: " + line);
                     continue;
                 }
                 
@@ -74,10 +72,7 @@ public class OfficerDataManager {
                 
                 // Add to map using uppercase NRIC
                 officersMap.put(nric, officer);
-                System.out.println("DEBUG: Loaded officer: " + name + ", NRIC: " + nric);
             }
-            
-            System.out.println("DEBUG: Loaded " + officersMap.size() + " officers");
             return true;
         } catch (IOException e) {
             System.out.println("Error loading officer data: " + e.getMessage());
@@ -122,7 +117,7 @@ public class OfficerDataManager {
      */
     public boolean updateOfficer(HDBOfficer officer) {
         if (officer == null || !validateNRICFormat(officer.getNric())) {
-            System.out.println("DEBUG: Invalid officer or NRIC format");
+            System.out.println("Invalid officer or NRIC format");
             return false;
         }
         
@@ -130,7 +125,7 @@ public class OfficerDataManager {
         
         // If the officer doesn't exist, add a log message
         if (!officersMap.containsKey(nric)) {
-            System.out.println("DEBUG: Officer not found in map. Adding new officer: " + nric);
+            System.out.println("Officer not found. Adding new officer: " + nric);
         }
         
         // Always update/add the officer to the map

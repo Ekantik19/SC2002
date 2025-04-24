@@ -83,30 +83,25 @@ public class ApplicationDataManager {
      * @return true if the data was successfully loaded, false otherwise
      */
     public boolean loadApplicationData() {
-        System.out.println("DEBUG: Loading applications from: " + filePath);
         applicationMap.clear();
         
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             // Skip header line
             String headerLine = reader.readLine();
-            System.out.println("DEBUG: Header line: " + headerLine);
             
             String line;
             int lineNumber = 2; // Start from line 2 after header
             while ((line = reader.readLine()) != null) {
                 // Skip empty lines
                 if (line.trim().isEmpty()) {
-                    System.out.println("DEBUG: Skipping empty line " + lineNumber);
                     lineNumber++;
                     continue;
                 }
                 
-                System.out.println("DEBUG: Processing line " + lineNumber + ": " + line);
                 String[] parts = line.split("\t");
                 
                 // Skip lines with insufficient data
                 if (parts.length < 4) {
-                    System.out.println("DEBUG: Line " + lineNumber + " has insufficient data: " + parts.length + " parts");
                     lineNumber++;
                     continue;
                 }
@@ -118,18 +113,12 @@ public class ApplicationDataManager {
                 String flatTypeStr = parts[3].trim();
                 String bookingDateStr = parts.length > 4 ? parts[4].trim() : "";
                 
-                System.out.println("DEBUG: Parsed NRIC: " + applicantNric);
-                System.out.println("DEBUG: Parsed Project: " + projectName);
-                System.out.println("DEBUG: Parsed Status: " + statusStr);
-                System.out.println("DEBUG: Parsed FlatType: " + flatTypeStr);
-                System.out.println("DEBUG: Parsed BookingDate: " + bookingDateStr);
-                
                 // Validate and parse application status
                 ApplicationStatus status;
                 try {
                     status = ApplicationStatus.valueOf(statusStr.toUpperCase());
                 } catch (IllegalArgumentException e) {
-                    System.out.println("DEBUG: Invalid application status on line " + lineNumber + 
+                    System.out.println("Invalid application status on line " + lineNumber + 
                                        ": " + statusStr);
                     lineNumber++;
                     continue;
@@ -138,7 +127,7 @@ public class ApplicationDataManager {
                 // Parse flat type using custom fromString method
                 FlatType flatType = FlatType.fromString(flatTypeStr);
                 if (flatType == null) {
-                    System.out.println("DEBUG: Invalid flat type on line " + lineNumber + 
+                    System.out.println("Invalid flat type on line " + lineNumber + 
                                        ": " + flatTypeStr);
                     lineNumber++;
                     continue;
@@ -152,7 +141,6 @@ public class ApplicationDataManager {
                     HDBOfficer officer = officerDataManager.getOfficerByNric(applicantNric);
                     if (officer != null) {
                         // Convert officer to applicant if needed
-                        System.out.println("DEBUG: Converted officer to applicant: " + officer.getName());
                         applicant = new Applicant(
                             officer.getName(), 
                             officer.getNric(), 
@@ -167,17 +155,12 @@ public class ApplicationDataManager {
                 
                 // Skip if either applicant or project is not found
                 if (applicant == null || project == null) {
-                    System.out.println("DEBUG: Applicant Lookup - NRIC: " + applicantNric + ", Found: " + (applicant != null));
-                    System.out.println("DEBUG: Project Lookup - Name: " + projectName + ", Found: " + (project != null));
-                    System.out.println("DEBUG: Skipping application: Applicant or Project not found - " + 
-                                       "NRIC: " + applicantNric + ", Project: " + projectName);
                     lineNumber++;
                     continue;
                 }
                 
                 // Generate application ID
                 String applicationId = generateApplicationId(applicantNric, projectName);
-                System.out.println("DEBUG: Generated application ID: " + applicationId);
                 
                 // Create application object
                 Application application = new Application(applicationId, applicant, project, flatType);
@@ -186,66 +169,53 @@ public class ApplicationDataManager {
                 switch (status) {
                     case PENDING:
                         // Do nothing for pending status
-                        System.out.println("DEBUG: Application status set to PENDING");
                         break;
                     case SUCCESSFUL:
                         application.approve();
-                        System.out.println("DEBUG: Application status set to SUCCESSFUL");
                         break;
                     case BOOKED:
                         application.approve();
                         application.bookFlat();
                         applicant.setBookedProject(project);
                         applicant.setBookedFlatType(flatType);
-                        System.out.println("DEBUG: Application status set to BOOKED");
                         if (!bookingDateStr.isEmpty()) {
                             try {
                                 Date bookingDate = new SimpleDateFormat("dd/MM/yyyy").parse(bookingDateStr);
                                 application.setBookingDate(bookingDate);
-                                System.out.println("DEBUG: Set booking date: " + bookingDate);
                             } catch (ParseException e) {
-                                System.out.println("DEBUG: Invalid booking date format on line " + lineNumber + 
+                                System.out.println("Invalid booking date format on line " + lineNumber + 
                                                 ": " + bookingDateStr);
                                 // Set current date as fallback
                                 application.setBookingDate(new Date());
-                                System.out.println("DEBUG: Using current date as fallback");
+                                System.out.println("Using current date as fallback");
                             }
                         } else {
                             // If no booking date was provided, set the current date
                             application.setBookingDate(new Date());
-                            System.out.println("DEBUG: No booking date provided, using current date");
                         }
                         break;
                     case UNSUCCESSFUL:
                         application.reject();
-                        System.out.println("DEBUG: Application status set to UNSUCCESSFUL");
                         break;
                 }
                 
                 // Store in map
                 applicationMap.put(applicationId, application);
-                System.out.println("DEBUG: Added application to map: " + applicationId);
                 
                 // Update applicant's current application reference
                 if (application.isActive()) {
                     applicant.setCurrentApplication(application);
-                    System.out.println("DEBUG: Updated applicant's current application reference");
                     applicantDataManager.updateApplicant(applicant);
                 }
                 
                 // Add application to project
                 project.addApplication(application);
-                System.out.println("DEBUG: Added application to project: " + projectName);
                 
                 lineNumber++;
             }
             
-            System.out.println("DEBUG: FINAL APPLICATION MAP SIZE: " + applicationMap.size());
             for (String key : applicationMap.keySet()) {
                 Application app = applicationMap.get(key);
-                System.out.println("DEBUG: Map entry - ID: " + key + 
-                                   ", Status: " + app.getStatus() +
-                                   ", BookingDate: " + app.getBookingDate());
             }
             
             return !applicationMap.isEmpty();
@@ -263,8 +233,6 @@ public class ApplicationDataManager {
      * @return true if successful, false otherwise
      */
     public boolean updateApplicationStatusInFile(String applicationId, ApplicationStatus newStatus) {
-        System.out.println("DEBUG: Updating application status directly in file: " + applicationId + 
-                        " to " + newStatus);
         
         try {
             // First, read the current file contents
@@ -299,8 +267,6 @@ public class ApplicationDataManager {
                     String lineAppId = generateApplicationId(nric, projectName);
                     
                     if (lineAppId.equals(applicationId)) {
-                        // Found the line to update
-                        System.out.println("DEBUG: Found application line: " + line);
                         
                         // Construct the updated line with new status
                         StringBuilder newLine = new StringBuilder();
@@ -319,14 +285,13 @@ public class ApplicationDataManager {
                         // Update the line in our list
                         fileLines.set(i, newLine.toString());
                         found = true;
-                        System.out.println("DEBUG: Updated line to: " + newLine.toString());
                         break;
                     }
                 }
             }
             
             if (!found) {
-                System.out.println("DEBUG: Application not found in file: " + applicationId);
+                System.out.println("Application not found in file: " + applicationId);
                 return false;
             }
             
@@ -338,7 +303,7 @@ public class ApplicationDataManager {
                 }
             }
             
-            System.out.println("DEBUG: Successfully updated application status in file");
+            System.out.println("Successfully updated application status");
             return true;
         } catch (IOException e) {
             System.out.println("ERROR updating application status in file: " + e.getMessage());
@@ -353,26 +318,12 @@ public class ApplicationDataManager {
      * @return true if the data was successfully saved, false otherwise
      */
     public boolean saveApplicationData() {
-        System.out.println("DEBUG: Saving applications to: " + filePath);
-        
-        // First, dump the current state of all applications for debugging
-        System.out.println("=== APPLICATION MAP BEFORE SAVE ===");
-        for (String key : applicationMap.keySet()) {
-            Application app = applicationMap.get(key);
-            System.out.println("DEBUG: Before save - ID: " + key + 
-                            ", Applicant: " + app.getApplicant().getNric() +
-                            ", Project: " + app.getProject().getProjectName() +
-                            ", Status: " + app.getStatus());
-        }
         
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
             // Write header
             writer.write("Applicant NRIC" + DELIMITER + "Project Name" + DELIMITER + 
                         "Application Status" + DELIMITER + "Flat Type" + DELIMITER + "Booking Date");
             writer.newLine();
-            
-            // Debug output before saving
-            System.out.println("DEBUG: Total applications to save: " + applicationMap.size());
             
             // Create a backup copy of the current application statuses
             Map<String, ApplicationStatus> statusBackup = new HashMap<>();
@@ -385,9 +336,6 @@ public class ApplicationDataManager {
             for (String appId : applicationMap.keySet()) {
                 Application application = applicationMap.get(appId);
                 ApplicationStatus status = statusBackup.get(appId);
-                
-                System.out.println("DEBUG: Writing application - ID: " + appId + 
-                                ", Status: " + status);
                 
                 writer.write(application.getApplicant().getNric() + DELIMITER);
                 writer.write(application.getProject().getProjectName() + DELIMITER);
@@ -410,7 +358,7 @@ public class ApplicationDataManager {
                 writer.newLine();
             }
             
-            System.out.println("DEBUG: Successfully saved applications");
+            System.out.println("Successfully saved applications");
             return true;
         } catch (IOException e) {
             System.out.println("ERROR saving application data: " + e.getMessage());
@@ -442,17 +390,14 @@ public class ApplicationDataManager {
      */
     public boolean updateApplication(Application application) {
         if (application == null || application.getApplicationId() == null) {
-            System.out.println("DEBUG: Cannot update null application or application with null ID");
+            System.out.println("Cannot update null application or application with null ID");
             return false;
         }
         
         if (!applicationMap.containsKey(application.getApplicationId())) {
-            System.out.println("DEBUG: Application with ID " + application.getApplicationId() + " not found in map");
+            System.out.println("Application with ID " + application.getApplicationId() + " not found.");
             return false;
         }
-        
-        System.out.println("DEBUG: Updating single application in map: " + application.getApplicationId() + 
-                        " with status: " + application.getStatus());
         
         // Update the specific application in the map
         applicationMap.put(application.getApplicationId(), application);
@@ -493,25 +438,21 @@ public class ApplicationDataManager {
      * @return A list of applications for the specified project
      */
     public List<Application> getApplicationsByProject(String projectName) {
-        System.out.println("DEBUG: Getting applications for project: " + projectName);
-        System.out.println("DEBUG: Total applications in map: " + applicationMap.size());
         
         List<Application> projectApplications = new ArrayList<>();
         
         for (Application application : applicationMap.values()) {
-            System.out.println("DEBUG: Checking application - Project: " + 
+            System.out.println("Checking application - Project: " + 
                             (application.getProject() != null ? 
                             application.getProject().getProjectName() : "null"));
             
             if (application.getProject() != null && 
                 application.getProject().getProjectName().equals(projectName)) {
                 projectApplications.add(application);
-                System.out.println("DEBUG: Added application to project list: " + 
-                                application.getApplicationId());
             }
         }
         
-        System.out.println("DEBUG: Found " + projectApplications.size() + 
+        System.out.println("Found " + projectApplications.size() + 
                         " applications for project: " + projectName);
         
         return projectApplications;
@@ -526,21 +467,14 @@ public class ApplicationDataManager {
     public List<Application> getApplicationsByApplicant(String applicantNric) {
         List<Application> applicantApplications = new ArrayList<>();
         
-        System.out.println("DEBUG: Searching for applications for NRIC: " + applicantNric);
-        System.out.println("DEBUG: Total applications in map: " + applicationMap.size());
-        
         for (Application application : applicationMap.values()) {
-            System.out.println("DEBUG: Checking application: " + application.getApplicationId() + 
-                            ", Applicant NRIC: " + application.getApplicant().getNric() + 
-                            ", Status: " + application.getStatus());
             
             if (application.getApplicant().getNric().equals(applicantNric)) {
                 applicantApplications.add(application);
-                System.out.println("DEBUG: Added application to list: " + application.getApplicationId());
             }
         }
         
-        System.out.println("DEBUG: Found " + applicantApplications.size() + 
+        System.out.println("Found " + applicantApplications.size() + 
                         " applications for NRIC: " + applicantNric);
         
         return applicantApplications;

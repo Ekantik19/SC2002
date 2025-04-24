@@ -47,13 +47,9 @@ public class ApplicantDataManager {
     public List<Applicant> readAllApplicants() {
         List<Applicant> applicants = new ArrayList<>();
         
-        System.out.println("DEBUG: Reading applicants from: " + filePath);
         File file = new File(filePath);
-        System.out.println("DEBUG: File exists: " + file.exists());
         
         if (!file.exists()) {
-            System.out.println("DEBUG: ⚠️ WARNING: Applicant file not found at: " + filePath);
-            System.out.println("DEBUG: Current working directory: " + System.getProperty("user.dir"));
             return applicants;
         }
         
@@ -67,8 +63,6 @@ public class ApplicantDataManager {
                     continue; // Skip the header row
                 }
                 
-                System.out.println("DEBUG: Processing line: " + line);
-                
                 String[] parts = line.split(DELIMITER);
                 if (parts.length >= 5) {
                     String name = parts[0];
@@ -77,19 +71,14 @@ public class ApplicantDataManager {
                     String maritalStatus = parts[3];
                     String password = parts[4];
                     
-                    System.out.println("DEBUG: Creating applicant - Name: " + name + ", NRIC: " + nric + 
-                                      ", Password: " + password);
-                    
                     Applicant applicant = new Applicant(name, nric, age, maritalStatus, password);
                     applicants.add(applicant);
                 }
             }
         } catch (IOException e) {
-            System.out.println("DEBUG: ⚠️ ERROR reading applicant data: " + e.getMessage());
+            System.out.println("ERROR reading applicant data: " + e.getMessage());
             e.printStackTrace();
         }
-        
-        System.out.println("DEBUG: Read " + applicants.size() + " applicants");
         return applicants;
     }
     
@@ -137,7 +126,6 @@ public class ApplicantDataManager {
      * @return true if the applicants were written successfully, false otherwise
      */
     public boolean writeApplicants(List<Applicant> applicants) {
-        System.out.println("DEBUG: Writing " + applicants.size() + " applicants to file: " + filePath);
         
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
             // Write header
@@ -147,8 +135,6 @@ public class ApplicantDataManager {
             
             // Write applicant data
             for (Applicant applicant : applicants) {
-                System.out.println("DEBUG: Writing applicant: " + applicant.getName() + 
-                                  ", Password: " + applicant.getPassword());
                 writer.write(
                     applicant.getName() + DELIMITER +
                     applicant.getNric() + DELIMITER +
@@ -158,8 +144,7 @@ public class ApplicantDataManager {
                 );
                 writer.newLine();
             }
-            
-            System.out.println("DEBUG: Successfully wrote applicants to file");
+        
             return true;
         } catch (IOException e) {
             System.out.println("Error writing applicant data: " + e.getMessage());

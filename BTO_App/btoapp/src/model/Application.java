@@ -27,8 +27,6 @@ public class Application extends AApplication {
     public Application(String applicationId, Applicant applicant, Project project, FlatType selectedFlatType) {
         super(applicationId != null ? applicationId : generateId(applicant, project), 
               applicant, project, selectedFlatType);
-        
-        System.out.println("DEBUG: Created application with ID: " + getApplicationId());
     }
     
     /**
@@ -46,10 +44,9 @@ public class Application extends AApplication {
                 .toUpperCase();
             
             String newId = "APP-" + nricPart + "-" + projectPart;
-            System.out.println("DEBUG: Generated application ID: " + newId);
             return newId;
         } else {
-            System.out.println("DEBUG: Cannot generate application ID - missing applicant or project");
+            System.out.println("Cannot generate application ID - missing applicant or project");
             return "APP-UNKNOWN";
         }
     }

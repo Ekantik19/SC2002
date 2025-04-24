@@ -44,8 +44,6 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         this.projectController = projectController;
         this.enquiryDataManager = enquiryDataManager;
         
-        System.out.println("DEBUG: EnquiryController initialized");
-        
         // Load enquiries from data manager
         loadEnquiries();
     }
@@ -54,9 +52,7 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
      * Loads enquiries from the data manager.
      */
     private void loadEnquiries() {
-        System.out.println("DEBUG: Loading enquiries via controller");
         List<Enquiry> enquiries = enquiryDataManager.loadEnquiries();
-        System.out.println("DEBUG: Controller loaded " + enquiries.size() + " enquiries");
     }
 
     /**
@@ -74,16 +70,16 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
     public Enquiry createEnquiry(Applicant applicant, String projectName, String enquiryText) {
         // Validate input
         if (applicant == null) {
-            System.out.println("DEBUG: Cannot create enquiry - applicant is null");
+            System.out.println(" Cannot create enquiry - applicant is null");
             return null;
         }
         
         if (enquiryText == null || enquiryText.trim().isEmpty()) {
-            System.out.println("DEBUG: Cannot create enquiry - text is empty");
+            System.out.println(" Cannot create enquiry - text is empty");
             return null;
         }
         
-        System.out.println("DEBUG: Creating enquiry for applicant: " + applicant.getName() + 
+        System.out.println(" Creating enquiry for applicant: " + applicant.getName() + 
                           " about project: " + projectName);
         
         // Get project (optional)
@@ -91,10 +87,9 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         if (projectName != null && !projectName.trim().isEmpty()) {
             project = projectController.getProjectById(projectName);
             if (project == null) {
-                System.out.println("DEBUG: Project not found: " + projectName);
-                System.out.println("DEBUG: Creating enquiry without project reference");
+                System.out.println(" Project not found: " + projectName);
             } else {
-                System.out.println("DEBUG: Found project: " + project.getProjectName());
+                System.out.println(" Found project: " + project.getProjectName());
             }
         }
         
@@ -119,10 +114,10 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
             // Save all enquiries to ensure persistence
             enquiryDataManager.saveEnquiries(enquiryDataManager.getAllEnquiries());
             
-            System.out.println("DEBUG: Enquiry added successfully: " + enquiryId);
+            System.out.println(" Enquiry added successfully: " + enquiryId);
             return enquiry;
         } else {
-            System.out.println("DEBUG: Failed to add enquiry to data manager");
+            System.out.println(" Failed to add enquiry");
             return null;
         }
     }
@@ -142,13 +137,13 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         // Find the enquiry
         Enquiry enquiry = enquiryDataManager.getEnquiryById(enquiryId);
         if (enquiry == null) {
-            System.out.println("DEBUG: Enquiry not found for update: " + enquiryId);
+            System.out.println(" Enquiry not found for update: " + enquiryId);
             return false;
         }
         
         // Check ownership
         if (!enquiry.getApplicant().getNric().equals(applicant.getNric())) {
-            System.out.println("DEBUG: Applicant does not own this enquiry");
+            System.out.println(" Applicant does not own this enquiry");
             return false;
         }
         
@@ -157,7 +152,7 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         
         // Save changes
         boolean updated = enquiryDataManager.updateEnquiry(enquiry);
-        System.out.println("DEBUG: Enquiry update result: " + updated);
+        System.out.println(" Enquiry update result: " + updated);
         
         if (updated) {
             // Save all enquiries to ensure persistence
@@ -181,13 +176,13 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         // Find the enquiry
         Enquiry enquiry = enquiryDataManager.getEnquiryById(enquiryId);
         if (enquiry == null) {
-            System.out.println("DEBUG: Enquiry not found for deletion: " + enquiryId);
+            System.out.println(" Enquiry not found for deletion: " + enquiryId);
             return false;
         }
         
         // Check ownership
         if (!enquiry.getApplicant().getNric().equals(applicant.getNric())) {
-            System.out.println("DEBUG: Applicant does not own this enquiry");
+            System.out.println(" Applicant does not own this enquiry");
             return false;
         }
         
@@ -201,7 +196,7 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         
         // Delete the enquiry
         boolean deleted = enquiryDataManager.deleteEnquiry(enquiryId);
-        System.out.println("DEBUG: Enquiry deletion result: " + deleted);
+        System.out.println(" Enquiry deletion result: " + deleted);
         
         if (deleted) {
             // Save all enquiries to ensure persistence
@@ -226,7 +221,7 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         // Find the enquiry
         Enquiry enquiry = enquiryDataManager.getEnquiryById(enquiryId);
         if (enquiry == null) {
-            System.out.println("DEBUG: Enquiry not found for reply: " + enquiryId);
+            System.out.println(" Enquiry not found for reply: " + enquiryId);
             return false;
         }
         
@@ -235,7 +230,7 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         
         // Save changes
         boolean updated = enquiryDataManager.updateEnquiry(enquiry);
-        System.out.println("DEBUG: Officer reply result: " + updated);
+        System.out.println(" Officer reply result: " + updated);
         
         if (updated) {
             // Save all enquiries to ensure persistence
@@ -260,7 +255,7 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         // Find the enquiry
         Enquiry enquiry = enquiryDataManager.getEnquiryById(enquiryId);
         if (enquiry == null) {
-            System.out.println("DEBUG: Enquiry not found for reply: " + enquiryId);
+            System.out.println(" Enquiry not found for reply: " + enquiryId);
             return false;
         }
         
@@ -269,7 +264,7 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
         
         // Save changes
         boolean updated = enquiryDataManager.updateEnquiry(enquiry);
-        System.out.println("DEBUG: Manager reply result: " + updated);
+        System.out.println(" Manager reply result: " + updated);
         
         if (updated) {
             // Save all enquiries to ensure persistence
@@ -288,20 +283,18 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
     @Override
     public List<Enquiry> getEnquiriesByApplicant(Applicant applicant) {
         if (applicant == null) {
-            System.out.println("DEBUG: Cannot get enquiries - applicant is null");
+            System.out.println(" Cannot get enquiries - applicant is null");
             return new ArrayList<>();
         }
         
         // Refresh from data manager to ensure we have the latest
-        System.out.println("DEBUG: Getting enquiries for applicant: " + applicant.getName() + 
+        System.out.println(" Getting enquiries for applicant: " + applicant.getName() + 
                           " (NRIC: " + applicant.getNric() + ")");
         
         List<Enquiry> enquiries = enquiryDataManager.getEnquiriesByApplicant(applicant.getNric());
-        System.out.println("DEBUG: Found " + enquiries.size() + " enquiries for applicant in data manager");
         
         // Merge with applicant's own list to ensure completeness
         List<Enquiry> applicantEnquiries = applicant.getEnquiries();
-        System.out.println("DEBUG: Applicant's own list has " + applicantEnquiries.size() + " enquiries");
         
         // Combine the two sources (avoid duplicates)
         List<Enquiry> result = new ArrayList<>(enquiries);
@@ -311,7 +304,7 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
             }
         }
         
-        System.out.println("DEBUG: Returning " + result.size() + " enquiries for applicant");
+        System.out.println(" Found " + result.size() + " enquiries for applicant");
         return result;
     }
     
@@ -334,24 +327,24 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
     @Override
     public List<Enquiry> getEnquiriesForOfficer(String projectId, HDBOfficer officer) {
         if (projectId == null || officer == null) {
-            System.out.println("DEBUG: Invalid parameters for getEnquiriesForOfficer");
+            System.out.println(" Invalid parameters for getEnquiriesForOfficer");
             return new ArrayList<>();
         }
         
         Project project = projectController.getProjectById(projectId);
         if (project == null) {
-            System.out.println("DEBUG: Project not found: " + projectId);
+            System.out.println(" Project not found: " + projectId);
             return new ArrayList<>();
         }
         
         // Check if officer is assigned to project
         if (!officer.isAssignedToProject(project)) {
-            System.out.println("DEBUG: Officer not assigned to project: " + projectId);
+            System.out.println(" Officer not assigned to project: " + projectId);
             return new ArrayList<>();
         }
         
         List<Enquiry> enquiries = project.getEnquiries();
-        System.out.println("DEBUG: Found " + enquiries.size() + " enquiries for project: " + projectId);
+        System.out.println(" Found " + enquiries.size() + " enquiries for project: " + projectId);
         
         return enquiries;
     }
@@ -365,7 +358,7 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
     @Override
     public List<Enquiry> getAllEnquiriesForManager(HDBManager manager) {
         if (manager == null) {
-            System.out.println("DEBUG: Manager is null");
+            System.out.println(" Manager is null");
             return new ArrayList<>();
         }
         
@@ -379,7 +372,7 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
             allEnquiries.addAll(project.getEnquiries());
         }
         
-        System.out.println("DEBUG: Found " + allEnquiries.size() + " enquiries for manager: " + 
+        System.out.println(" Found " + allEnquiries.size() + " enquiries for manager: " + 
                            manager.getName());
         
         return allEnquiries;
@@ -394,18 +387,18 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
     @Override
     public List<Enquiry> getEnquiriesByProject(String projectId) {
         if (projectId == null) {
-            System.out.println("DEBUG: Project ID is null");
+            System.out.println(" Project ID is null");
             return new ArrayList<>();
         }
         
         Project project = projectController.getProjectById(projectId);
         if (project == null) {
-            System.out.println("DEBUG: Project not found: " + projectId);
+            System.out.println(" Project not found: " + projectId);
             return new ArrayList<>();
         }
         
         List<Enquiry> enquiries = project.getEnquiries();
-        System.out.println("DEBUG: Found " + enquiries.size() + " enquiries for project: " + projectId);
+        System.out.println(" Found " + enquiries.size() + " enquiries for project: " + projectId);
         
         return enquiries;
     }
@@ -427,7 +420,7 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
             }
         }
         
-        System.out.println("DEBUG: Found " + answeredEnquiries.size() + " answered enquiries");
+        System.out.println(" Found " + answeredEnquiries.size() + " answered enquiries");
         
         return answeredEnquiries;
     }
@@ -449,7 +442,7 @@ public class EnquiryController extends ABaseController implements IEnquiryContro
             }
         }
         
-        System.out.println("DEBUG: Found " + unansweredEnquiries.size() + " unanswered enquiries");
+        System.out.println(" Found " + unansweredEnquiries.size() + " unanswered enquiries");
         
         return unansweredEnquiries;
     }
